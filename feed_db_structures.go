@@ -17,11 +17,52 @@
 package main
 
 import (
+	"bytes"
+
+	"encoding/base64"
+
 	"net/url"
 	"time"
 
 	riak "github.com/tpjg/goriakpbc"
 )
+
+type ItemKey []byte
+
+func (l ItemKey) Less(r Comparable) bool {
+	return bytes.Compare(l, r.(ItemKey)) == -1
+}
+func (l *ItemKey) UnmarshalJSON(input []byte) error {
+	input = input[1 : len(input)-1]
+
+	*l = make(ItemKey, base64.StdEncoding.DecodedLen(len(input)))
+	n, err := base64.StdEncoding.Decode(*l, input)
+
+	if err != nil {
+		return err
+	} else {
+		*l = (*l)[0:n]
+		return nil
+	}
+}
+
+type ItemKeyList []ItemKey
+
+func (list *ItemKeyList) Append(key Comparable) {
+	*list = append(*list, key.(ItemKey))
+}
+
+func (list ItemKeyList) Get(index int) Comparable {
+	return list[index]
+}
+
+func (list ItemKeyList) Len() int {
+	return len(list)
+}
+
+func (ItemKeyList) Make() ComparableArray {
+	return &ItemKeyList{}
+}
 
 type Feed struct {
 	Url url.URL `riak:"url"`
@@ -29,8 +70,8 @@ type Feed struct {
 	Title     string    `riak:"title"`
 	LastCheck time.Time `riak:"last_check"`
 
-	ItemKeys        []byte `riak:"item_keys"`
-	DeletedItemKeys []byte `riak:"deleted_items"`
+	ItemKeys        ItemKeyList `riak:"item_keys"`
+	DeletedItemKeys ItemKeyList `riak:"deleted_items"`
 
 	NextCheck time.Time `riak:"next_check"`
 
@@ -48,13 +89,17 @@ func (f *Feed) Resolve(siblingsCount int) error {
 	// Next, just use the first sibling as the default values.  Everything merges against it.
 	*f = siblings[0]
 
-	// Next resolve regular feed details.  Basically, take the latest version!
 	for i := 1; i < siblingsCount; i++ {
+		// Resolve regular feed details.  Basically, take the latest version!
 		if siblings[i].LastCheck.After(f.LastCheck) {
 			f.Title = siblings[i].Title
 			f.LastCheck = siblings[i].LastCheck
 			f.NextCheck = siblings[i].NextCheck
 		}
+
+		// for the item lists, merge and de-dup using insert slice sort!
+		f.ItemKeys = *InsertSliceSort(&f.ItemKeys, &siblings[i].ItemKeys).(*ItemKeyList)
+		f.DeletedItemKeys = *InsertSliceSort(&f.DeletedItemKeys, &siblings[i].DeletedItemKeys).(*ItemKeyList)
 	}
 	return nil
 }
