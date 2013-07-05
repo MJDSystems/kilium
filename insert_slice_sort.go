@@ -43,6 +43,7 @@ func InsertSliceSort(x, y ComparableArray) ComparableArray {
 			ret.Append(nextY)
 			yI++
 		} else {
+			ret.Append(nextX) // Randomly choosen to be from the first list
 			xI++
 			yI++
 		}

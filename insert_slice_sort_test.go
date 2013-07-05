@@ -62,30 +62,37 @@ func (s testIntSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func TestInsertSliceSortUsingInt(t *testing.T) {
-	f := func(x, y testIntSlice) bool {
-		//Insret Slice Sort expects sorted values.  So sort x/y
-		sort.Sort(x)
-		sort.Sort(y)
+func PreformTest(t *testing.T, x, y testIntSlice) bool {
+	//Insret Slice Sort expects sorted values.  So sort x/y
+	sort.Sort(x)
+	sort.Sort(y)
 
-		ret := *InsertSliceSort(&x, &y).(*testIntSlice)
+	ret := *InsertSliceSort(&x, &y).(*testIntSlice)
 
-		var xI, yI int
-		for i := 0; i < len(ret); i++ {
-			if i+1 < len(ret) && ret[i] < ret[i+1] { // Needs to be descending order, thus next element is smaller.
-				t.Logf("Falied to return sorted list at %v,%v %v", i, i+1, ret)
-				return false
-			}
-			if xI < len(x) && x[xI] == ret[i] {
-				xI++
-			}
-			if yI < len(y) && y[yI] == ret[i] {
-				yI++
-			}
+	var xI, yI int
+	for i := 0; i < len(ret); i++ {
+		if i+1 < len(ret) && ret[i] < ret[i+1] { // Needs to be descending order, thus next element is smaller.
+			t.Logf("Falied to return sorted list at %v,%v %v", i, i+1, ret)
+			return false
 		}
-		return xI == len(x) && yI == len(y)
+		if xI < len(x) && x[xI] == ret[i] {
+			xI++
+		}
+		if yI < len(y) && y[yI] == ret[i] {
+			yI++
+		}
 	}
-	if err := quick.Check(f, nil); err != nil {
+	return xI == len(x) && yI == len(y)
+}
+
+func TestInsertSliceSortUsingRandomInt(t *testing.T) {
+	if err := quick.Check(func(x, y testIntSlice) bool { return PreformTest(t, x, y) }, nil); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestInsertSliceSortUsingSameLists(t *testing.T) {
+	if PreformTest(t, testIntSlice{4, 6}, testIntSlice{4, 6}) != true {
+		t.Error("Falied to properly merge slices with the same content!")
 	}
 }
