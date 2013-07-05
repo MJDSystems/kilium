@@ -34,7 +34,29 @@ type Feed struct {
 
 	NextCheck time.Time `riak:"next_check"`
 
-	riak.Model
+	riak.Model `riak:"feeds"`
+}
+
+func (f *Feed) Resolve(siblingsCount int) error {
+	// First get the siblings!
+	siblingsI, err := f.Siblings(&Feed{})
+	if err != nil {
+		return err
+	}
+	siblings := siblingsI.([]Feed)
+
+	// Next, just use the first sibling as the default values.  Everything merges against it.
+	*f = siblings[0]
+
+	// Next resolve regular feed details.  Basically, take the latest version!
+	for i := 1; i < siblingsCount; i++ {
+		if siblings[i].LastCheck.After(f.LastCheck) {
+			f.Title = siblings[i].Title
+			f.LastCheck = siblings[i].LastCheck
+			f.NextCheck = siblings[i].NextCheck
+		}
+	}
+	return nil
 }
 
 type FeedItem struct {
