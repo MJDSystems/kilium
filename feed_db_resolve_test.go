@@ -37,6 +37,10 @@ func compareFeeds(f1, f2 Feed) bool {
 	return customDeepEqual(f1, f2, []string{"Model"})
 }
 
+func compareItems(i1, i2 FeedItem) bool {
+	return customDeepEqual(i1, i2, []string{"Model"})
+}
+
 func TestFeedAtributesResolving(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
@@ -197,5 +201,56 @@ func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the l
 	}
 	if reflect.DeepEqual(load.ItemKeys, ItemKeyList{genItemKey(100, "A"), genItemKey(8, "B")}) != true {
 		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, [][]byte{genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")})
+	}
+}
+
+func TestFeedItemResolving(t *testing.T) {
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	url, _ := url.Parse("http://example.com/story_up_1")
+	Item := FeedItem{
+		Url: *url,
+
+		Title:   "First Title",
+		Author:  "Author 1",
+		Content: "Content 1",
+		PubDate: time.Date(2013, 7, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	if err := con.NewModel("ConflictItem", &Item); err != nil {
+		t.Fatalf("Failed to create Item's model (%s)", err)
+	}
+	if err := Item.Save(); err != nil {
+		t.Fatalf("Failed to save Item (%s)", err)
+	}
+
+	// And totally new actually used data from an update.
+	url, _ = url.Parse("http://example.com/story_up_2")
+	Item = FeedItem{
+		Url: *url,
+
+		Title:   "Second Title",
+		Author:  "Author 2",
+		Content: "Content 2",
+		PubDate: time.Date(2014, 7, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	// Clear the model to make a sibling.
+	Item.Model = riak.Model{}
+	//And save
+	if err := con.NewModel("ConflictItem", &Item); err != nil {
+		t.Fatalf("Failed to create Item's model (%s)", err)
+	}
+	if err := Item.Save(); err != nil {
+		t.Fatalf("Failed to save Item (%s)", err)
+	}
+
+	// Cause conflict and verify resolve function
+	load := FeedItem{}
+	if err := con.LoadModel("ConflictItem", &load); err != nil {
+		t.Fatalf("Failed to load conflict model  (%s)", err)
+	} else if compareItems(Item, load) == false {
+		t.Errorf("Resolved model does not match latest update (old, new) (%v, %v)", Item, load)
 	}
 }
