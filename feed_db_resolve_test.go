@@ -121,7 +121,6 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 	// Using same base data, add more keys.  Pretend A fell off a cliff, and add an E.  DeletedItems clears.
 	Entry.ItemKeys = ItemKeyList{genItemKey(8, "B"), genItemKey(2, "E")}
 	Entry.DeletedItemKeys = ItemKeyList{}
-	Entry.Title = "SADF"
 
 	// Clear the model to make a sibling.
 	Entry.Model = riak.Model{}
@@ -144,6 +143,59 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 		t.Errorf("Deleted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")})
 	}
 	if reflect.DeepEqual(load.ItemKeys, ItemKeyList{genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")}) != true {
+		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, [][]byte{genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")})
+	}
+}
+
+func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the lists turn out what I want.
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	Entry := Feed{
+		Url: *testFeedUrl,
+
+		Title:     "First Title",
+		LastCheck: time.Date(2013, 7, 1, 0, 0, 0, 0, time.UTC),
+
+		NextCheck: time.Date(2013, 7, 1, 1, 0, 0, 0, time.UTC),
+		//No items, because I don't care.
+
+		ItemKeys:        ItemKeyList{genItemKey(100, "A"), genItemKey(8, "B")},
+		DeletedItemKeys: ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")},
+	}
+
+	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
+		t.Fatalf("Failed to create Entry's model (%s)", err)
+	}
+	if err := Entry.Save(); err != nil {
+		t.Fatalf("Failed to save Entry (%s)", err)
+	}
+
+	// Using same base data, add more keys.  Pretend A fell off a cliff, and add an E.  DeletedItems clears.
+	Entry.ItemKeys = ItemKeyList{genItemKey(100, "A"), genItemKey(40, "C"), genItemKey(8, "B")}
+	Entry.DeletedItemKeys = ItemKeyList{}
+
+	// Clear the model to make a sibling.
+	Entry.Model = riak.Model{}
+	//And save
+	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
+		t.Fatalf("Failed to create Entry's model (%s)", err)
+	}
+	if err := Entry.Save(); err != nil {
+		t.Fatalf("Failed to save Entry (%s)", err)
+	}
+
+	// Cause conflict
+	load := Feed{}
+	if err := con.LoadModel("ConflictFeed", &load); err != nil {
+		t.Fatalf("Failed to load conflict model  (%s)", err)
+	}
+
+	// Verify lists.
+	if reflect.DeepEqual(load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")}) != true {
+		t.Errorf("Deleted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")})
+	}
+	if reflect.DeepEqual(load.ItemKeys, ItemKeyList{genItemKey(100, "A"), genItemKey(8, "B")}) != true {
 		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, [][]byte{genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")})
 	}
 }
