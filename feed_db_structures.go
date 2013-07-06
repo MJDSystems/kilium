@@ -90,11 +90,13 @@ func (f *Feed) Resolve(siblingsCount int) error {
 	}
 	siblings := siblingsI.([]Feed)
 
-	// Next, just use the first sibling as the default values.  Everything merges against it.
-	*f = siblings[0]
+	// Set the Url, as it is constant
+	f.Url = siblings[0].Url
 
-	for i := 1; i < siblingsCount; i++ {
+	for i := 0; i < siblingsCount; i++ {
 		// Resolve regular feed details.  Basically, take the latest version!
+		// If this is the first object, it will have a zero time of year 1st.  If a feed is claiming
+		// be older then that, well it just won't work.
 		if siblings[i].LastCheck.After(f.LastCheck) {
 			f.Title = siblings[i].Title
 			f.LastCheck = siblings[i].LastCheck
