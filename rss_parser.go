@@ -127,6 +127,8 @@ func parseRssFeed(feedContents []byte) (*ParsedFeedData, error) {
 		// Failing that any of those are useful, just fail the item.
 		if item.Guid != "" {
 			nextItem.GenericKey = makeHash(item.Guid)
+		} else if item.Id != "" {
+			nextItem.GenericKey = makeHash(item.Id)
 		} else if len(item.Links) >= 1 {
 			nextItem.GenericKey = makeHash(item.Links[0].Href)
 		} else if item.Title != "" {
