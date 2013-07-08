@@ -62,6 +62,19 @@ func deepValueEqual(v1, v2 reflect.Value, skipFields []string, visited map[uintp
 		visited[h] = &visit{addr1, addr2, typ, seen}
 	}
 
+	// Really new magic: If the type has a method called equal that accepts the *exact* type and not
+	// an interface{} (for now), and returns bool, then call that to check equality instead of doing
+	// below.  Used to work around time's location field, for instance, since it doens't matter.
+	if method, ok := v1.Type().MethodByName("Equal"); ok {
+		// Found a potential.  Now verify other constraints
+		methodType := method.Type
+		if methodType.NumIn() == 2 && methodType.In(0) == v1.Type() && methodType.In(1) == v2.Type() &&
+			methodType.NumOut() == 1 && methodType.Out(0).Kind() == reflect.Bool {
+			// And it matches.  Call it and return the result.
+			return method.Func.Call([]reflect.Value{v1, v2})[0].Bool()
+		}
+	}
+
 	switch v1.Kind() {
 	case reflect.Array:
 		if v1.Len() != v2.Len() {
