@@ -22,10 +22,15 @@ import (
 	riak "github.com/tpjg/goriakpbc"
 )
 
+var con *riak.Client
+
 func getTestConnection(t *testing.T) *riak.Client {
-	con, err := GetDatabaseConnection("localhost:8087")
-	if err != nil {
-		t.Fatalf("Failed to get db connection (%s)", err)
+	if con == nil {
+		var err error
+		con, err = GetDatabaseConnection("localhost:8087")
+		if err != nil {
+			t.Fatalf("Failed to get db connection (%s)", err)
+		}
 	}
 	return con //This will only return if the fatal didn't happen.
 }
