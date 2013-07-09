@@ -110,7 +110,7 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 		//No items, because I don't care.
 
 		ItemKeys:        ItemKeyList{genItemKey(10, "A"), genItemKey(8, "B")},
-		DeletedItemKeys: ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")},
+		DeletedItemKeys: ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")},
 	}
 
 	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
@@ -121,7 +121,7 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 	}
 
 	// Using same base data, add more keys.  Pretend A fell off a cliff, and add an E.  DeletedItems clears.
-	Entry.ItemKeys = ItemKeyList{genItemKey(8, "B"), genItemKey(2, "E")}
+	Entry.ItemKeys = ItemKeyList{genItemKey(100, "AA"), genItemKey(8, "B"), genItemKey(2, "E")}
 	Entry.DeletedItemKeys = ItemKeyList{}
 
 	// Clear the model to make a sibling.
@@ -141,11 +141,13 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 	}
 
 	// Verify lists.
-	if reflect.DeepEqual(load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")}) != true {
+	test := ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")}
+	if reflect.DeepEqual(load.DeletedItemKeys, test) != true {
 		t.Errorf("Deleted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")})
 	}
-	if reflect.DeepEqual(load.ItemKeys, ItemKeyList{genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")}) != true {
-		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, [][]byte{genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")})
+	test = ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")}
+	if reflect.DeepEqual(load.ItemKeys, test) != true {
+		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, test)
 	}
 }
 
@@ -162,8 +164,8 @@ func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the l
 		NextCheck: time.Date(2013, 7, 1, 1, 0, 0, 0, time.UTC),
 		//No items, because I don't care.
 
-		ItemKeys:        ItemKeyList{genItemKey(100, "A"), genItemKey(8, "B")},
-		DeletedItemKeys: ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")},
+		ItemKeys:        ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B")},
+		DeletedItemKeys: ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")},
 	}
 
 	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
@@ -174,7 +176,7 @@ func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the l
 	}
 
 	// Using same base data, add more keys.  Pretend A fell off a cliff, and add an E.  DeletedItems clears.
-	Entry.ItemKeys = ItemKeyList{genItemKey(100, "A"), genItemKey(40, "C"), genItemKey(8, "B")}
+	Entry.ItemKeys = ItemKeyList{genItemKey(100, "AA"), genItemKey(40, "CC"), genItemKey(8, "B"), genItemKey(2, "E")}
 	Entry.DeletedItemKeys = ItemKeyList{}
 
 	// Clear the model to make a sibling.
@@ -194,11 +196,13 @@ func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the l
 	}
 
 	// Verify lists.
-	if reflect.DeepEqual(load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")}) != true {
+	test := ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")}
+	if reflect.DeepEqual(load.DeletedItemKeys, test) != true {
 		t.Errorf("Deleted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")})
 	}
-	if reflect.DeepEqual(load.ItemKeys, ItemKeyList{genItemKey(100, "A"), genItemKey(8, "B")}) != true {
-		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, [][]byte{genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")})
+	test = ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")}
+	if reflect.DeepEqual(load.ItemKeys, test) != true {
+		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, test)
 	}
 }
 
