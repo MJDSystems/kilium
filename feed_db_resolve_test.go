@@ -62,8 +62,6 @@ func TestFeedAtributesResolving(t *testing.T) {
 
 		NextCheck: time.Date(2013, 7, 1, 13, 0, 0, 0, time.UTC),
 		//No items, because I don't care.
-		ItemKeys:        ItemKeyList{}, // Need this though, since the resolve will actually set this.
-		DeletedItemKeys: ItemKeyList{}, // Same again
 	}
 
 	if err := con.NewModel("ConflictFeed", &EntryA); err != nil {
@@ -84,8 +82,8 @@ func TestFeedAtributesResolving(t *testing.T) {
 	load := Feed{}
 	if err := con.LoadModel("ConflictFeed", &load); err != nil {
 		t.Fatalf("Failed to load conflict model  (%s)", err)
-	} else if compareFeeds(EntryB, load) == false {
-		t.Errorf("Resolved model does not match latest update (old, new) (%v, %v)", EntryB, load)
+	} else if customDeepEqual(EntryB, load, []string{"Model", "ItemKeys", "DeletedItemKeys"}) == false {
+		t.Errorf("Resolved model does not match latest update (old, new) (\n%+v, \n%+v)", EntryB, load)
 	}
 }
 
