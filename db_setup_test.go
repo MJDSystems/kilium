@@ -35,10 +35,6 @@ func killBucket(con *riak.Client, bucketName string) error {
 	if err != nil {
 		return err
 	}
-	err = bucket.SetAllowMult(false)
-	if err != nil {
-		return err
-	}
 
 	keys, err := bucket.ListKeys()
 	if err != nil {
