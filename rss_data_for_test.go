@@ -27,10 +27,7 @@ import (
 )
 
 const (
-	numberOfFeedInputFile = 1
-	feedDir               = "test_feed_data"
-	baseFile              = "feed_"
-	totalBaseFile         = feedDir + "/" + baseFile
+	feedDir = "test_feed_data/"
 )
 
 func produceFeedStructureFromData(d *ParsedFeedData) (ret *feeds.Feed) {
@@ -52,12 +49,11 @@ func produceFeedStructureFromData(d *ParsedFeedData) (ret *feeds.Feed) {
 	return
 }
 
-func getFeedDataFor(t *testing.T, feed int) (parsedFeed *ParsedFeedData) {
-	if feed >= numberOfFeedInputFile {
-		t.Fatalf("Requested non-existant feed file %v of %v", feed, numberOfFeedInputFile)
+func getFeedDataFor(t *testing.T, name string, feed int) (parsedFeed *ParsedFeedData) {
+	d, err := ioutil.ReadFile(feedDir + name + "_" + strconv.Itoa(feed) + ".json")
+	if err != nil {
+		t.Fatalf("Failed to read data (%s)!", err)
 	}
-
-	d, err := ioutil.ReadFile(totalBaseFile + strconv.Itoa(feed) + ".json")
 
 	parsedFeed = &ParsedFeedData{}
 	err = json.Unmarshal(d, parsedFeed)

@@ -73,8 +73,8 @@ func verifyParsedRssFeed(t *testing.T, original, parsed ParsedFeedData) {
 }
 
 func TestSimpleFeedParserTest(t *testing.T) {
-	atom, _ := produceFeedStructureFromData(getFeedDataFor(t, 0)).ToAtom()
-	rss, _ := produceFeedStructureFromData(getFeedDataFor(t, 0)).ToRss()
+	atom, _ := produceFeedStructureFromData(getFeedDataFor(t, "simple", 0)).ToAtom()
+	rss, _ := produceFeedStructureFromData(getFeedDataFor(t, "simple", 0)).ToRss()
 
 	atomOut, e := parseRssFeed([]byte(atom))
 	if e != nil {
@@ -84,7 +84,7 @@ func TestSimpleFeedParserTest(t *testing.T) {
 	if e != nil {
 		t.Fatalf("Failed to parse atom feed (%s)", e)
 	}
-	feed := getFeedDataFor(t, 0)
+	feed := getFeedDataFor(t, "simple", 0)
 
 	verifyParsedAtomFeed(t, *feed, *atomOut)
 	verifyParsedRssFeed(t, *feed, *rssOut)
