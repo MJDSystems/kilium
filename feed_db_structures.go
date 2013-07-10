@@ -27,6 +27,32 @@ import (
 	riak "github.com/tpjg/goriakpbc"
 )
 
+type Feed struct {
+	Url url.URL `riak:"url"`
+
+	Title     string    `riak:"title"`
+	LastCheck time.Time `riak:"last_check"`
+
+	ItemKeys        ItemKeyList `riak:"item_keys"`
+	DeletedItemKeys ItemKeyList `riak:"deleted_items"`
+
+	NextCheck time.Time `riak:"next_check"`
+
+	riak.Model `riak:"feeds"`
+}
+
+type FeedItem struct {
+	Title   string `riak:"title"`
+	Author  string `riak:"author"`
+	Content string `riak:"content"`
+
+	Url url.URL `riak:"url"`
+
+	PubDate time.Time `riak:"publication_date"`
+
+	riak.Model `riak:"items"`
+}
+
 type ItemKey []byte
 
 func (l ItemKey) Less(r Comparable) bool {
@@ -68,20 +94,6 @@ func (ItemKeyList) Make() ComparableArray {
 	return &ItemKeyList{}
 }
 
-type Feed struct {
-	Url url.URL `riak:"url"`
-
-	Title     string    `riak:"title"`
-	LastCheck time.Time `riak:"last_check"`
-
-	ItemKeys        ItemKeyList `riak:"item_keys"`
-	DeletedItemKeys ItemKeyList `riak:"deleted_items"`
-
-	NextCheck time.Time `riak:"next_check"`
-
-	riak.Model `riak:"feeds"`
-}
-
 func (f *Feed) Resolve(siblingsCount int) error {
 	// First get the siblings!
 	siblingsI, err := f.Siblings(&Feed{})
@@ -110,18 +122,6 @@ func (f *Feed) Resolve(siblingsCount int) error {
 	RemoveSliceElements(&f.ItemKeys, &f.DeletedItemKeys)
 
 	return nil
-}
-
-type FeedItem struct {
-	Title   string `riak:"title"`
-	Author  string `riak:"author"`
-	Content string `riak:"content"`
-
-	Url url.URL `riak:"url"`
-
-	PubDate time.Time `riak:"publication_date"`
-
-	riak.Model `riak:"items"`
 }
 
 func (f *FeedItem) Resolve(siblingsCount int) error {
