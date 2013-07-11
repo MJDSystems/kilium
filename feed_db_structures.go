@@ -83,6 +83,10 @@ func (l *ItemKey) UnmarshalJSON(input []byte) error {
 	}
 }
 
+func (key ItemKey) IsRawItemId(id []byte) bool {
+	return bytes.Compare(key[9:], id) == 0
+}
+
 type ItemKeyList []ItemKey
 
 func (list *ItemKeyList) Append(key Comparable) {
@@ -103,6 +107,15 @@ func (list ItemKeyList) Len() int {
 
 func (ItemKeyList) Make() ComparableArray {
 	return &ItemKeyList{}
+}
+
+func (list ItemKeyList) FindRawItemId(id []byte) int {
+	for i, key := range list {
+		if key.IsRawItemId(id) {
+			return i
+		}
+	}
+	return -1
 }
 
 func (f *Feed) Resolve(siblingsCount int) error {
