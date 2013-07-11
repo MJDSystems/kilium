@@ -127,6 +127,10 @@ func (list ItemKeyList) FindRawItemId(id []byte) int {
 	return -1
 }
 
+func (f *Feed) UrlKey() string {
+	return string(makeHash(f.Url.String()))
+}
+
 func (f *Feed) Resolve(siblingsCount int) error {
 	// First get the siblings!
 	siblingsI, err := f.Siblings(&Feed{})
