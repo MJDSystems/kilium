@@ -105,6 +105,14 @@ func (list ItemKeyList) Len() int {
 	return len(list)
 }
 
+func (list ItemKeyList) Less(l, r int) bool {
+	return list[l].Less(list[r])
+}
+
+func (list ItemKeyList) Swap(l, r int) {
+	list[l], list[r] = list[r], list[l]
+}
+
 func (ItemKeyList) Make() ComparableArray {
 	return &ItemKeyList{}
 }
