@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 
 	"encoding/base64"
 
@@ -54,6 +55,16 @@ type FeedItem struct {
 }
 
 type ItemKey []byte
+
+func NewItemKey(id uint64, rawId []byte) ItemKey {
+	buf := &bytes.Buffer{}
+
+	binary.Write(buf, binary.BigEndian, id)
+	buf.WriteString("-")
+	buf.Write(rawId)
+
+	return buf.Bytes()
+}
 
 func (l ItemKey) Less(r Comparable) bool {
 	return bytes.Compare(l, r.(ItemKey)) == -1
