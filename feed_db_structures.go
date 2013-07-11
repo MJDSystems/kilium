@@ -34,8 +34,9 @@ type Feed struct {
 	Title     string    `riak:"title"`
 	LastCheck time.Time `riak:"last_check"`
 
-	ItemKeys        ItemKeyList `riak:"item_keys"`
-	DeletedItemKeys ItemKeyList `riak:"deleted_items"`
+	ItemKeys         ItemKeyList `riak:"item_keys"`
+	InsertedItemKeys ItemKeyList `riak:"inserted_items"`
+	DeletedItemKeys  ItemKeyList `riak:"deleted_items"`
 
 	NextCheck time.Time `riak:"next_check"`
 
@@ -149,6 +150,7 @@ func (f *Feed) Resolve(siblingsCount int) error {
 
 		// for the item lists, merge and de-dup using insert slice sort!
 		f.ItemKeys = *InsertSliceSort(&f.ItemKeys, &siblings[i].ItemKeys).(*ItemKeyList)
+		f.InsertedItemKeys = *InsertSliceSort(&f.InsertedItemKeys, &siblings[i].InsertedItemKeys).(*ItemKeyList)
 		f.DeletedItemKeys = *InsertSliceSort(&f.DeletedItemKeys, &siblings[i].DeletedItemKeys).(*ItemKeyList)
 	}
 	RemoveSliceElements(&f.ItemKeys, &f.DeletedItemKeys)

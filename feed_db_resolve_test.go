@@ -82,7 +82,7 @@ func TestFeedAtributesResolving(t *testing.T) {
 	load := Feed{}
 	if err := con.LoadModel("ConflictFeed", &load); err != nil {
 		t.Fatalf("Failed to load conflict model  (%s)", err)
-	} else if customDeepEqual(EntryB, load, []string{"Model", "ItemKeys", "DeletedItemKeys"}) == false {
+	} else if customDeepEqual(EntryB, load, []string{"Model", "ItemKeys", "DeletedItemKeys", "InsertedItemKeys"}) == false {
 		t.Errorf("Resolved model does not match latest update (old, new) (\n%+v, \n%+v)", EntryB, load)
 	}
 }
@@ -107,10 +107,11 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 		LastCheck: time.Date(2013, 7, 1, 0, 0, 0, 0, time.UTC),
 
 		NextCheck: time.Date(2013, 7, 1, 1, 0, 0, 0, time.UTC),
-		//No items, because I don't care.
 
 		ItemKeys:        ItemKeyList{genItemKey(10, "A"), genItemKey(8, "B")},
 		DeletedItemKeys: ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")},
+
+		InsertedItemKeys: ItemKeyList{genItemKey(10, "A"), genItemKey(8, "B")},
 	}
 
 	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
@@ -122,6 +123,7 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 
 	// Using same base data, add more keys.  Pretend A fell off a cliff, and add an E.  DeletedItems clears.
 	Entry.ItemKeys = ItemKeyList{genItemKey(100, "AA"), genItemKey(8, "B"), genItemKey(2, "E")}
+	Entry.InsertedItemKeys = Entry.ItemKeys
 	Entry.DeletedItemKeys = ItemKeyList{}
 
 	// Clear the model to make a sibling.
@@ -149,6 +151,9 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 	if reflect.DeepEqual(load.ItemKeys, test) != true {
 		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, test)
 	}
+	if reflect.DeepEqual(load.InsertedItemKeys, test) != true {
+		t.Errorf("Inserted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.InsertedItemKeys, test)
+	}
 }
 
 func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the lists turn out what I want.
@@ -162,10 +167,11 @@ func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the l
 		LastCheck: time.Date(2013, 7, 1, 0, 0, 0, 0, time.UTC),
 
 		NextCheck: time.Date(2013, 7, 1, 1, 0, 0, 0, time.UTC),
-		//No items, because I don't care.
 
 		ItemKeys:        ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B")},
 		DeletedItemKeys: ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")},
+		//Inserted item keys left untested here, as they may appear in the DeletedItemKeys list,
+		//But still be valid in the inserted item keys.
 	}
 
 	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
