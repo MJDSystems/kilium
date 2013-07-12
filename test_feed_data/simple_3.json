@@ -1,0 +1,69 @@
+{
+	"Title": "Test Feed 1",
+	"Items": [
+		{
+			"GenericKey": "SXRlbTEtSUQ=",
+			"Title": "Item 1, nicely made (UPDATED + New pub date in the future!!!!)!",
+			"Author": "New John Doe",
+			"Content": "A nicely formatted item that will be updated",
+			"Url": {
+				"Scheme": "http",
+				"Opaque": "",
+				"User": null,
+				"Host": "example.com",
+				"Path": "/item1",
+				"RawQuery": "",
+				"Fragment": ""
+			},
+			"PubDate": "2013-07-10T02:03:32-04:00"
+		},
+		{
+			"GenericKey": "SXRlcTEtAUQ=",
+			"Title": "And now for something new",
+			"Author": "Me",
+			"Content": "RANDOMNESS!!!!",
+			"Url": {
+				"Scheme": "http",
+				"Opaque": "",
+				"User": null,
+				"Host": "example.com",
+				"Path": "/rand",
+				"RawQuery": "",
+				"Fragment": ""
+			},
+			"PubDate": "2013-07-09T02:03:32-04:00"
+		},
+		{
+			"GenericKey": "SXRlbTItSUQ=",
+			"Title": "Item 2, but no dates (UP NOW)!",
+			"Author": "John Doe (ALL NEW!!!)",
+			"Content": "Dates aren't cool, so change content instead NEW CONTENT IS AWESOME CONTENT!",
+			"Url": {
+				"Scheme": "http",
+				"Opaque": "",
+				"User": null,
+				"Host": "example.com",
+				"Path": "/item2",
+				"RawQuery": "",
+				"Fragment": ""
+			}
+		},
+		{
+			"GenericKey": null,
+			"Title": "Item 3, but no ID!",
+			"Author": "John Doe",
+			"Content": "Ids aren't cool either!  But dates are totally awesome!",
+			"Url": {
+				"Scheme": "http",
+				"Opaque": "",
+				"User": null,
+				"Host": "example.com",
+				"Path": "/item3",
+				"RawQuery": "",
+				"Fragment": ""
+			},
+			"PubDate": "2013-07-08T02:03:32-04:00"
+		}
+	],
+	"NextCheckTime": "0001-01-01T00:00:00Z"
+}

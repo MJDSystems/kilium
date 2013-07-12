@@ -184,3 +184,22 @@ func TestFeedUpdateAndInsert(t *testing.T) {
 		t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
 	}
 }
+
+func TestFeedUpdateWithChangingPubDates(t *testing.T) {
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	url, _ := url.Parse("http://example.com/rss")
+
+	feedModel := CreateFeed(t, url)
+
+	feed := MustUpdateFeedTo(t, con, url, "simple", 4)
+
+	// Finally, load the feed again and verify properties!
+	loadFeed := &Feed{}
+	if err := con.LoadModel(feedModel.UrlKey(), loadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else if compareParsedToFinalFeed(t, feed, loadFeed, con) != true {
+		t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
+	}
+}

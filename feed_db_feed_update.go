@@ -100,7 +100,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 		// Try to find the raw Item in the Item Keys list.
 		index := feed.ItemKeys.FindRawItemId(rawItem.GenericKey)
 		if index != -1 {
-			// Found it!  Assume it is an update.
+			// Found it!  Load the details.  Also load the model, which will be re-used later.
 			p := ToProcess{
 				ItemKey: feed.ItemKeys[index],
 				Data:    rawItem,
@@ -111,7 +111,21 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 				return err
 			}
 
-			UpdatedItems = append(UpdatedItems, p)
+			// Ok, now is this have a new pub date?  If so, pull it out of its current position, and
+			// move it up the chain.
+			if p.Model.PubDate.Equal(p.Data.PubDate) {
+				// Pub dates are the same.  Just modify the item to match what is in the feed.
+				UpdatedItems = append(UpdatedItems, p)
+			} else {
+				// Pub dates differ.  Delete the item, and re-insert it.
+				feed.DeletedItemKeys = append(feed.DeletedItemKeys, p.ItemKey)
+				feed.ItemKeys.RemoveAt(index)
+
+				// Delete the model from the to process struct.
+				p.Model = &FeedItem{}
+
+				NewItems = append(NewItems, p) // This gives us the new id.
+			}
 		} else {
 			// Nope, lets insert it!
 			NewItems = append(NewItems, ToProcess{
@@ -157,12 +171,22 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 		}(newItem)
 	}
 
+	// Finally delete items.
+	for _, deleteItemKey := range feed.DeletedItemKeys {
+		go func(toDelete ItemKey) {
+			errCh <- con.DeleteFrom("items", string(toDelete))
+		}(deleteItemKey)
+	}
+	// Ok, deleted.  So clear the list
+	feed.DeletedItemKeys = nil
+
 	sort.Sort(sort.Reverse(feed.ItemKeys)) // Just sort this.  TBD: Actually maintain this sort order to avoid this!
 
 	//Now, collect the errors
 	var errs []error
 	drainErrorChannelIntoSlice(errCh, &errs, len(NewItems))
 	drainErrorChannelIntoSlice(errCh, &errs, len(UpdatedItems))
+	drainErrorChannelIntoSlice(errCh, &errs, len(feed.DeletedItemKeys))
 	if len(errs) != 0 {
 		return MultiError(errs)
 	}
