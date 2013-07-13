@@ -79,6 +79,16 @@ func (l ParsedFeedItemList) Swap(i, j int) {
 	l[i], l[j] = l[j], l[i]
 }
 
+func (l ParsedFeedItemList) VerifySort() bool {
+	for i := 0; i < l.Len()-1; i++ {
+		// Don't fail if the dates are equal.
+		if !l[i].PubDate.IsZero() && l[i].PubDate.Before(l[i+1].PubDate) {
+			return false
+		}
+	}
+	return true
+}
+
 func parseRssFeed(feedContents []byte) (*ParsedFeedData, error) {
 	feed := rss.New(0, true, nil, nil)
 

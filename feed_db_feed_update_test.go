@@ -18,7 +18,6 @@ package main
 
 import (
 	"net/url"
-	"sort"
 
 	riak "github.com/tpjg/goriakpbc"
 
@@ -42,7 +41,11 @@ func makeIdGenerator() <-chan uint64 {
 var testIdGenerator <-chan uint64 = makeIdGenerator()
 
 func fixFeedForMerging(toFix *ParsedFeedData) *ParsedFeedData {
-	sort.Sort(toFix.Items)
+	// Instead of sorting, verify we are sorted.  Otherwise items without publication dates can end
+	// up in the wrong place.
+	if !toFix.Items.VerifySort() {
+		panic("Items are not sorted!!!!")
+	}
 
 	for i, _ := range toFix.Items {
 		item := &toFix.Items[i]

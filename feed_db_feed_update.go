@@ -70,6 +70,10 @@ func UpdateItem(con *riak.Client, itemKey ItemKey, item ParsedFeedItem, itemMode
 	return nil
 }
 
+func itemDiffersFromModel(feedItem ParsedFeedItem, model *FeedItem) bool {
+	return true
+}
+
 func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids <-chan uint64) error {
 	feed := &Feed{Url: feedUrl}
 	if err := con.LoadModel(feed.UrlKey(), feed); err == riak.NotFound {
@@ -113,7 +117,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 
 			// Ok, now is this have a new pub date?  If so, pull it out of its current position, and
 			// move it up the chain.
-			if p.Model.PubDate.Equal(p.Data.PubDate) {
+			if p.Model.PubDate.Equal(p.Data.PubDate) && !(p.Data.PubDate.IsZero() && itemDiffersFromModel(p.Data, p.Model)) {
 				// Pub dates are the same.  Just modify the item to match what is in the feed.
 				UpdatedItems = append(UpdatedItems, p)
 			} else {
