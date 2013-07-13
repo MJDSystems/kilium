@@ -70,8 +70,12 @@ func UpdateItem(con *riak.Client, itemKey ItemKey, item ParsedFeedItem, itemMode
 	return nil
 }
 
-func itemDiffersFromModel(feedItem ParsedFeedItem, model *FeedItem) bool {
-	return true
+func itemDiffersFromModel(feedItem ParsedFeedItem, itemModel *FeedItem) bool {
+	return itemModel.Title != feedItem.Title ||
+	itemModel.Author != feedItem.Author ||
+	itemModel.Content != feedItem.Content ||
+	itemModel.Url != feedItem.Url ||
+	itemModel.PubDate != feedItem.PubDate
 }
 
 func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids <-chan uint64) error {
@@ -116,7 +120,8 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 			}
 
 			// Ok, now is this have a new pub date?  If so, pull it out of its current position, and
-			// move it up the chain.
+			// move it up the chain.  Otherwise, just update the content.  If an item has no pub date,
+			// assume that it has changed if the any part of the item changed.
 			if p.Model.PubDate.Equal(p.Data.PubDate) && !(p.Data.PubDate.IsZero() && itemDiffersFromModel(p.Data, p.Model)) {
 				// Pub dates are the same.  Just modify the item to match what is in the feed.
 				UpdatedItems = append(UpdatedItems, p)
