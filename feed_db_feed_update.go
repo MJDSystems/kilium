@@ -177,6 +177,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 			errCh <- con.DeleteFrom("items", string(toDelete))
 		}(deleteItemKey)
 	}
+	deletedItemCount := len(feed.DeletedItemKeys) // Need this to drain the error channel later.
 	// Ok, deleted.  So clear the list
 	feed.DeletedItemKeys = nil
 
@@ -186,7 +187,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	var errs []error
 	drainErrorChannelIntoSlice(errCh, &errs, len(NewItems))
 	drainErrorChannelIntoSlice(errCh, &errs, len(UpdatedItems))
-	drainErrorChannelIntoSlice(errCh, &errs, len(feed.DeletedItemKeys))
+	drainErrorChannelIntoSlice(errCh, &errs, deletedItemCount)
 	if len(errs) != 0 {
 		return MultiError(errs)
 	}
