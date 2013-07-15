@@ -97,7 +97,7 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 	return true
 }
 
-func CreateFeed(t *testing.T, Url *url.URL) Feed {
+func CreateFeed(t *testing.T, con *riak.Client, Url *url.URL) Feed {
 	feedModel := &Feed{Url: *Url}
 	if err := con.NewModel(feedModel.UrlKey(), feedModel); err != nil {
 		t.Fatalf("Failed to initialize feed model (%s)!", err)
@@ -134,7 +134,7 @@ func TestSingleFeedInsert(t *testing.T) {
 		t.Fatalf("Failed to insert simple single feed (%s)!", err)
 	}
 
-	feedModel := CreateFeed(t, url)
+	feedModel := CreateFeed(t, con, url)
 
 	err = updateFeed(con, *url, *feed, testIdGenerator)
 	if err != nil {
@@ -156,7 +156,7 @@ func TestSingleFeedUpdate(t *testing.T) {
 
 	url, _ := url.Parse("http://example.com/rss")
 
-	feedModel := CreateFeed(t, url)
+	feedModel := CreateFeed(t, con, url)
 
 	feed := MustUpdateFeedTo(t, con, url, "simple", 2)
 
@@ -175,7 +175,7 @@ func TestFeedUpdateAndInsert(t *testing.T) {
 
 	url, _ := url.Parse("http://example.com/rss")
 
-	feedModel := CreateFeed(t, url)
+	feedModel := CreateFeed(t, con, url)
 
 	feed := MustUpdateFeedTo(t, con, url, "simple", 3)
 
@@ -194,7 +194,7 @@ func TestFeedUpdateWithChangingPubDates(t *testing.T) {
 
 	url, _ := url.Parse("http://example.com/rss")
 
-	feedModel := CreateFeed(t, url)
+	feedModel := CreateFeed(t, con, url)
 
 	feed := MustUpdateFeedTo(t, con, url, "simple", 4)
 
