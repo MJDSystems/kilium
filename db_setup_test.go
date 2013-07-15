@@ -17,6 +17,7 @@
 package main
 
 import (
+	"sync"
 	"testing"
 
 	riak "github.com/tpjg/goriakpbc"
@@ -46,12 +47,18 @@ func killBucket(con *riak.Client, bucketName string) error {
 		return err
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(len(keys))
 	for _, key := range keys {
-		err = bucket.Delete(string(key))
-		if err != nil {
-			return err
-		}
+		go func(key string) {
+			defer wg.Done()
+			err := bucket.Delete(string(key))
+			if err != nil {
+				panic(err)
+			}
+		}(string(key))
 	}
+	wg.Wait()
 
 	return nil
 }
