@@ -136,10 +136,12 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 				NewItems = append(NewItems, p) // This gives us the new id.
 			}
 		} else {
-			// Nope, lets insert it!
-			NewItems = append(NewItems, ToProcess{
-				Data: rawItem,
-			})
+			// Nope, lets insert it!  But only if there are less then MaximumFeedItems already to be inserted.
+			if len(NewItems) < MaximumFeedItems {
+				NewItems = append(NewItems, ToProcess{
+					Data: rawItem,
+				})
+			}
 		}
 	}
 

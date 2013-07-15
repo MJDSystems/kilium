@@ -21,9 +21,13 @@ import (
 
 	riak "github.com/tpjg/goriakpbc"
 
+	"math/rand"
+	"reflect"
+
 	"time"
 
 	"testing"
+	"testing/quick"
 )
 
 func makeIdGenerator() <-chan uint64 {
@@ -239,5 +243,41 @@ func TestFeedUpdateWithChangingPubDates(t *testing.T) {
 		t.Fatalf("Failed to initialize feed model (%s)!", err)
 	} else if compareParsedToFinalFeed(t, feed, loadFeed, con) != true {
 		t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
+	}
+}
+
+func GenerateParsedFeed(rand *rand.Rand) (out ParsedFeedData) {
+	out = ParsedFeedData{}
+	if titleOut, ok := quick.Value(reflect.TypeOf(out.Title), rand); ok {
+		out.Title = titleOut.Interface().(string)
+	} else {
+		panic("Couldn't make a title!")
+	}
+
+	out.Items = make([]ParsedFeedItem, MaximumFeedItems+20)
+
+	return
+}
+
+func TestFeedDealingWithOverLargeFeed(t *testing.T) {
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	x := GenerateParsedFeed(rand.New(rand.NewSource(0)))
+
+	url, _ := url.Parse("http://example.com/rss")
+	feedModel := CreateFeed(t, con, url)
+
+	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+		t.Fatalf("Failed to update simple single feed (%s)!", err)
+	}
+
+	x.Items = x.Items[:MaximumFeedItems]
+
+	loadFeed := &Feed{}
+	if err := con.LoadModel(feedModel.UrlKey(), loadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else if compareParsedToFinalFeed(t, &x, loadFeed, con) == false {
+		t.Fatalf("Inserted data did not match original data (minus overage!)")
 	}
 }
