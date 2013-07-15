@@ -49,7 +49,7 @@ func InsertItem(con *riak.Client, itemKey ItemKey, item ParsedFeedItem) error {
 		Url:     item.Url,
 		PubDate: item.PubDate,
 	}
-	if err := con.NewModel(string(itemKey), &itemModel); err != nil {
+	if err := con.NewModel(itemKey.GetRiakKey(), &itemModel); err != nil {
 		return err
 	} else if err = itemModel.Save(); err != nil {
 		return err
@@ -115,7 +115,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 				Model:   &FeedItem{},
 			}
 
-			if err := con.LoadModel(string(p.ItemKey), p.Model); err != nil {
+			if err := con.LoadModel(p.ItemKey.GetRiakKey(), p.Model); err != nil {
 				return err
 			}
 

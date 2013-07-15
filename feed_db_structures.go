@@ -88,6 +88,10 @@ func (key ItemKey) IsRawItemId(id []byte) bool {
 	return bytes.Compare(key[9:], id) == 0
 }
 
+func (key ItemKey) GetRiakKey() string {
+	return base64.URLEncoding.EncodeToString(key)
+}
+
 type ItemKeyList []ItemKey
 
 func (list *ItemKeyList) Append(key Comparable) {
@@ -128,7 +132,7 @@ func (list ItemKeyList) FindRawItemId(id []byte) int {
 }
 
 func (f *Feed) UrlKey() string {
-	return string(makeHash(f.Url.String()))
+	return base64.URLEncoding.EncodeToString(makeHash(f.Url.String()))
 }
 
 func (f *Feed) Resolve(siblingsCount int) error {
