@@ -113,7 +113,7 @@ func MustUpdateFeedTo(t *testing.T, con *riak.Client, url *url.URL, feedName str
 		fixFeedForMerging(feed)
 
 		if err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
-			t.Errorf("Failed to update simple single feed (%s)!", err)
+			t.Fatalf("Failed to update simple single feed (%s)!", err)
 		}
 	}
 
