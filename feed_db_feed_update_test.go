@@ -21,6 +21,8 @@ import (
 
 	riak "github.com/tpjg/goriakpbc"
 
+	"time"
+
 	"testing"
 )
 
@@ -74,12 +76,45 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 		return false
 	}
 
+	type FeedItemCh struct {
+		item FeedItem
+		ch   chan FeedItemCh
+	}
+
+	itemChOut := make(chan FeedItemCh)
+	itemCh := make(chan FeedItem)
+
+	go func(itemCh chan FeedItem, itemChOut chan FeedItemCh) {
+		defer close(itemCh)
+		for item, ok := <-itemChOut; ok; item, ok = <-itemChOut {
+			itemCh <- item.item
+			itemChOut = item.ch
+		}
+	}(itemCh, itemChOut)
+
+	itemChIn := make(chan FeedItemCh)
+
+	for _, itemKey := range model.ItemKeys {
+		go func(itemKey ItemKey, itemChOut, itemChIn chan FeedItemCh) {
+			defer close(itemChOut)
+
+			modelItem := FeedItem{}
+			if err := con.LoadModel(itemKey.GetRiakKey(), &modelItem, riak.R1); err != nil {
+				t.Errorf("Failed to load item! Error: %s item %s", err, itemKey.GetRiakKey())
+			}
+			itemChOut <- FeedItemCh{modelItem, itemChIn}
+		}(itemKey, itemChOut, itemChIn)
+		itemChOut = itemChIn
+		itemChIn = make(chan FeedItemCh)
+	}
+
 	//Compare saved feed items.  This means a trip through riak!  The order should match though ...
-	for i, itemKey := range model.ItemKeys {
-		modelItem := FeedItem{}
-		if err := con.LoadModel(string(itemKey), &modelItem); err != nil {
-			t.Errorf("Failed to load item! Error: %s", err)
-			return false
+	for i, _ := range model.ItemKeys {
+		var modelItem FeedItem
+		select {
+		case modelItem = <-itemCh:
+		case <-time.After(time.Second * 5):
+			t.Fatalf("Failed to get an item before timeout, item %v", i)
 		}
 
 		dataItem := data.Items[i]
