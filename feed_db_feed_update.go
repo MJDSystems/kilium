@@ -72,10 +72,10 @@ func UpdateItem(con *riak.Client, itemKey ItemKey, item ParsedFeedItem, itemMode
 
 func itemDiffersFromModel(feedItem ParsedFeedItem, itemModel *FeedItem) bool {
 	return itemModel.Title != feedItem.Title ||
-	itemModel.Author != feedItem.Author ||
-	itemModel.Content != feedItem.Content ||
-	itemModel.Url != feedItem.Url ||
-	itemModel.PubDate != feedItem.PubDate
+		itemModel.Author != feedItem.Author ||
+		itemModel.Content != feedItem.Content ||
+		itemModel.Url != feedItem.Url ||
+		itemModel.PubDate != feedItem.PubDate
 }
 
 func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids <-chan uint64) error {
