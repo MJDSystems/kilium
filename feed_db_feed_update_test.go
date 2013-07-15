@@ -57,7 +57,7 @@ func fixFeedForMerging(toFix *ParsedFeedData) *ParsedFeedData {
 func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, con *riak.Client) bool {
 	// Compare basics:
 	if data.Title != model.Title {
-		t.Error("Feed title didn't match %s vs %s!", data.Title, model.Title)
+		t.Errorf("Feed title didn't match '%s' vs '%s'!", data.Title, model.Title)
 		return false
 	}
 
