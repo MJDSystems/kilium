@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"reflect"
 
+	"strconv"
 	"time"
 
 	"testing"
@@ -55,7 +56,7 @@ func fixFeedForMerging(toFix *ParsedFeedData) *ParsedFeedData {
 
 	for i, _ := range toFix.Items {
 		item := &toFix.Items[i]
-		item.GenericKey = makeHash(string(item.GenericKey))
+		item.GenericKey = makeHash(string(item.GenericKey) + key_uniquer)
 	}
 	return toFix
 }
@@ -164,6 +165,15 @@ func MustUpdateFeedTo(t *testing.T, con *riak.Client, url *url.URL, feedName str
 	return
 }
 
+var urlKeyRand = rand.New(rand.NewSource(0))
+func getUniqueExampleComUrl(t *testing.T) *url.URL {
+	url, err := url.Parse("http://example.com/"+key_uniquer+strconv.Itoa(urlKeyRand.Int())+"/rss")
+	if err != nil {
+		t.Fatalf("Failed to generate url (%s)", err)
+	}
+	return url
+}
+
 func TestSingleFeedInsert(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
@@ -171,7 +181,7 @@ func TestSingleFeedInsert(t *testing.T) {
 	feed := getFeedDataFor(t, "simple", 0)
 	fixFeedForMerging(feed)
 
-	url, _ := url.Parse("http://example.com/rss")
+	url := getUniqueExampleComUrl(t)
 
 	err := updateFeed(con, *url, *feed, testIdGenerator)
 	if err != FeedNotFound {
@@ -198,7 +208,7 @@ func TestSingleFeedUpdate(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
 
-	url, _ := url.Parse("http://example.com/rss")
+	url := getUniqueExampleComUrl(t)
 
 	feedModel := CreateFeed(t, con, url)
 
@@ -217,7 +227,7 @@ func TestFeedUpdateAndInsert(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
 
-	url, _ := url.Parse("http://example.com/rss")
+	url := getUniqueExampleComUrl(t)
 
 	feedModel := CreateFeed(t, con, url)
 
@@ -236,7 +246,7 @@ func TestFeedUpdateWithChangingPubDates(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
 
-	url, _ := url.Parse("http://example.com/rss")
+	url := getUniqueExampleComUrl(t)
 
 	feedModel := CreateFeed(t, con, url)
 
@@ -260,6 +270,9 @@ func GenerateParsedFeed(rand *rand.Rand) (out ParsedFeedData) {
 	}
 
 	out.Items = make([]ParsedFeedItem, MaximumFeedItems+20)
+	for i, _ := range out.Items {
+		out.Items[i].GenericKey = makeHash(key_uniquer+strconv.Itoa(rand.Int()))
+	}
 
 	return
 }
@@ -270,7 +283,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 
 	x := GenerateParsedFeed(rand.New(rand.NewSource(0)))
 
-	url, _ := url.Parse("http://example.com/rss")
+	url := getUniqueExampleComUrl(t)
 	feedModel := CreateFeed(t, con, url)
 
 	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {

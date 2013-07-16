@@ -17,6 +17,8 @@
 package main
 
 import (
+	"time"
+
 	"sync"
 	"testing"
 
@@ -24,6 +26,9 @@ import (
 )
 
 var staticTestCon *riak.Client
+// This is a static string that changes on every invocation of the test suite.  It is meant to ensure
+// the keys are unique per run.
+var key_uniquer string
 
 func getTestConnection(t *testing.T) *riak.Client {
 	if staticTestCon == nil {
@@ -32,6 +37,7 @@ func getTestConnection(t *testing.T) *riak.Client {
 		if err != nil {
 			t.Fatalf("Failed to get db connection (%s)", err)
 		}
+		key_uniquer = time.Now().String()
 	}
 	return staticTestCon //This will only return if the fatal didn't happen.
 }
