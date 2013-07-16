@@ -118,7 +118,7 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 		var modelItem FeedItem
 		select {
 		case modelItem = <-itemCh:
-		case <-time.After(time.Second * 5):
+		case <-time.After(time.Minute * 5):
 			t.Fatalf("Failed to get an item before timeout, item %v", i)
 		}
 
