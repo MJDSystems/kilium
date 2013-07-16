@@ -49,7 +49,7 @@ func InsertItem(con *riak.Client, itemKey ItemKey, item ParsedFeedItem) error {
 		Url:     item.Url,
 		PubDate: item.PubDate,
 	}
-	if err := con.NewModel(itemKey.GetRiakKey(), &itemModel); err != nil {
+	if err := con.LoadModel(itemKey.GetRiakKey(), &itemModel); err != riak.NotFound {
 		return err
 	} else if err = itemModel.Save(); err != nil {
 		return err

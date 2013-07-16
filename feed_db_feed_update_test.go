@@ -138,10 +138,15 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 
 func CreateFeed(t *testing.T, con *riak.Client, Url *url.URL) Feed {
 	feedModel := &Feed{Url: *Url}
-	if err := con.NewModel(feedModel.UrlKey(), feedModel); err != nil {
+	if err := con.LoadModel(feedModel.UrlKey(), feedModel); err != nil && err != riak.NotFound {
 		t.Fatalf("Failed to initialize feed model (%s)!", err)
-	} else if err = feedModel.Save(); err != nil {
-		t.Fatalf("Failed to store feed model (%s)!", err)
+	} else {
+		modelElement := feedModel.Model
+		feedModel = &Feed{Url: *Url}
+		feedModel.Model = modelElement
+		if err = feedModel.Save(); err != nil {
+			t.Fatalf("Failed to store feed model (%s)!", err)
+		}
 	}
 	return *feedModel
 }
