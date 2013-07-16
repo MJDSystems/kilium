@@ -33,7 +33,7 @@ func setupBucket(cli *riak.Client, bucketName string) error {
 }
 
 func GetDatabaseConnection(addr string) (*riak.Client, error) {
-	cli := riak.NewClientPool(addr, 10)
+	cli := riak.NewClientPool(addr, 100)
 	err := cli.Connect()
 	if err != nil {
 		return nil, err
