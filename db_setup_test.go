@@ -58,7 +58,11 @@ func killBucket(con *riak.Client, bucketName string) error {
 	for _, key := range keys {
 		go func(key string) {
 			defer wg.Done()
-			err := bucket.Delete(string(key))
+			obj, err := bucket.Get(string(key))
+			if obj == nil {
+				panic(err)
+			}
+			err = obj.Destroy()
 			if err != nil {
 				panic(err)
 			}

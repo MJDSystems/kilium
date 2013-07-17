@@ -183,9 +183,17 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	}
 
 	// Finally delete items.
+	itemsBucket, err := con.Bucket("items")
+	if err != nil {
+		return err
+	}
 	for _, deleteItemKey := range feed.DeletedItemKeys {
 		go func(toDelete ItemKey) {
-			errCh <- con.DeleteFrom("items", string(toDelete))
+			if obj, err := itemsBucket.Get(toDelete.GetRiakKey()); obj == nil {
+				errCh <- err
+			} else {
+				errCh <- obj.Destroy()
+			}
 		}(deleteItemKey)
 	}
 	deletedItemCount := len(feed.DeletedItemKeys) // Need this to drain the error channel later.
