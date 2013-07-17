@@ -70,6 +70,11 @@ func NewItemKey(id uint64, rawId []byte) ItemKey {
 func (l ItemKey) Less(r Comparable) bool {
 	return bytes.Compare(l, r.(ItemKey)) == -1
 }
+
+func (l ItemKey) Equal(r ItemKey) bool {
+	return bytes.Compare(l, r) == 0
+}
+
 func (l *ItemKey) UnmarshalJSON(input []byte) error {
 	input = input[1 : len(input)-1]
 

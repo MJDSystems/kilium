@@ -137,6 +137,31 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 	return true
 }
 
+func checkAllItemsDeleted(t *testing.T, feed *Feed, con *riak.Client) bool {
+	ch := make(chan bool)
+	for _, itemKey := range feed.ItemKeys {
+		go func(itemKey ItemKey, ch chan<- bool) {
+			modelItem := FeedItem{}
+			if err := con.LoadModel(itemKey.GetRiakKey(), &modelItem, riak.R1); err == riak.NotFound {
+				ch <- false
+			} else {
+				ch <- true
+			}
+		}(itemKey, ch)
+	}
+
+	problems := 0
+	for _, _ = range feed.ItemKeys {
+		found := <-ch
+		if found {
+			//t.Errorf("Found deleted item %s", itemKey.GetRiakKey())
+			problems++
+		}
+	}
+	t.Log(problems)
+	return problems == 0
+}
+
 func CreateFeed(t *testing.T, con *riak.Client, Url *url.URL) Feed {
 	feedModel := &Feed{Url: *Url}
 	if err := con.LoadModel(feedModel.UrlKey(), feedModel); err != nil && err != riak.NotFound {
@@ -166,6 +191,7 @@ func MustUpdateFeedTo(t *testing.T, con *riak.Client, url *url.URL, feedName str
 }
 
 var urlKeyRand = rand.New(rand.NewSource(0))
+
 func getUniqueExampleComUrl(t *testing.T) *url.URL {
 	url, err := url.Parse("http://example.com/" + key_uniquer + strconv.Itoa(urlKeyRand.Int()) + "/rss")
 	if err != nil {
@@ -281,21 +307,43 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
 
-	x := GenerateParsedFeed(rand.New(rand.NewSource(0)))
+	rand := rand.New(rand.NewSource(0))
 
 	url := getUniqueExampleComUrl(t)
 	feedModel := CreateFeed(t, con, url)
 
+	t.Log("Test creating overlarge feed.")
+
+	x := GenerateParsedFeed(rand)
 	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
 		t.Fatalf("Failed to update simple single feed (%s)!", err)
 	}
 
 	x.Items = x.Items[:MaximumFeedItems]
 
-	loadFeed := &Feed{}
-	if err := con.LoadModel(feedModel.UrlKey(), loadFeed); err != nil {
+	origLoadFeed := &Feed{}
+	if err := con.LoadModel(feedModel.UrlKey(), origLoadFeed); err != nil {
 		t.Fatalf("Failed to initialize feed model (%s)!", err)
-	} else if compareParsedToFinalFeed(t, &x, loadFeed, con) == false {
+	} else if compareParsedToFinalFeed(t, &x, origLoadFeed, con) == false {
 		t.Fatalf("Inserted data did not match original data (minus overage!)")
 	}
+
+	t.Log("Test completely replacing said feed with a new Oversized feed.")
+	x = GenerateParsedFeed(rand) // This should generate all new items.
+	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+		t.Fatalf("Failed to replace simple single feed (%s)!", err)
+	}
+
+	x.Items = x.Items[:MaximumFeedItems]
+
+	newLoadFeed := &Feed{}
+	if err := con.LoadModel(feedModel.UrlKey(), newLoadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else if compareParsedToFinalFeed(t, &x, newLoadFeed, con) == false {
+		t.Fatalf("Inserted data did not match original data (minus overage!)")
+	} else if checkAllItemsDeleted(t, origLoadFeed, con) == false {
+		t.Fatalf("There are left over deleted items!")
+	}
+
+	t.Log("")
 }
