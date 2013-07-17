@@ -167,7 +167,7 @@ func MustUpdateFeedTo(t *testing.T, con *riak.Client, url *url.URL, feedName str
 
 var urlKeyRand = rand.New(rand.NewSource(0))
 func getUniqueExampleComUrl(t *testing.T) *url.URL {
-	url, err := url.Parse("http://example.com/"+key_uniquer+strconv.Itoa(urlKeyRand.Int())+"/rss")
+	url, err := url.Parse("http://example.com/" + key_uniquer + strconv.Itoa(urlKeyRand.Int()) + "/rss")
 	if err != nil {
 		t.Fatalf("Failed to generate url (%s)", err)
 	}
@@ -271,7 +271,7 @@ func GenerateParsedFeed(rand *rand.Rand) (out ParsedFeedData) {
 
 	out.Items = make([]ParsedFeedItem, MaximumFeedItems+20)
 	for i, _ := range out.Items {
-		out.Items[i].GenericKey = makeHash(key_uniquer+strconv.Itoa(rand.Int()))
+		out.Items[i].GenericKey = makeHash(key_uniquer + strconv.Itoa(rand.Int()))
 	}
 
 	return
