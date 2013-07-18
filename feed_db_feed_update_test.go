@@ -303,6 +303,57 @@ func GenerateParsedFeed(rand *rand.Rand) (out ParsedFeedData) {
 	return
 }
 
+func mustCreateEmptyItemAt(t *testing.T, con *riak.Client, itemKey ItemKey) {
+	itemModel := FeedItem{}
+	if err := con.LoadModel(itemKey.GetRiakKey(), &itemModel); err != riak.NotFound {
+		t.Fatalf("Failed to preload item to create an empty item at %s (%s)", itemKey.GetRiakKey(), err)
+	} else if err = itemModel.Save(); err != nil {
+		t.Fatalf("Failed to save an empty item at %s (%s)", itemKey.GetRiakKey(), err)
+	}
+}
+
+func TestWithExistingToDeleteItems(t *testing.T) {
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	url := getUniqueExampleComUrl(t)
+
+	feedModel := CreateFeed(t, con, url)
+
+	feedModel.Title = "ASDF"
+	feedModel.DeletedItemKeys = ItemKeyList{
+		NewItemKey(1, makeHash("Key 1")),
+		NewItemKey(2, makeHash("Key 2 - DNE")),
+		NewItemKey(3, makeHash("Key 3")),
+		NewItemKey(4, makeHash("Key 4 - DNE")),
+	}
+	mustCreateEmptyItemAt(t, con, feedModel.DeletedItemKeys[0])
+	mustCreateEmptyItemAt(t, con, feedModel.DeletedItemKeys[2])
+	deletedItems := feedModel.DeletedItemKeys
+
+	if err := feedModel.Save(); err != nil {
+		t.Fatalf("Failed to save preloaded content!")
+	}
+
+	feed := &ParsedFeedData{}
+	if err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
+		t.Errorf("Failed to update simple single feed (%s)!", err)
+	}
+
+	// Finally, load the feed again and verify properties!
+	loadFeed := &Feed{}
+	if err := con.LoadModel(feedModel.UrlKey(), loadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else {
+		if compareParsedToFinalFeed(t, feed, loadFeed, con) != true {
+			t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
+		}
+		if checkAllItemsDeleted(t, deletedItems, con) == false {
+			t.Errorf("There are left over deleted items!")
+		}
+	}
+}
+
 func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
