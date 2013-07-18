@@ -136,24 +136,21 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 				NewItems = append(NewItems, p) // This gives us the new id.
 			}
 		} else {
-			// Nope, lets insert it!  First, should we knock off an item?  This involves creating a space.
-			if (len(feed.ItemKeys)+len(NewItems)) >= MaximumFeedItems-1 {
-				// Yep, we need to stay below MaximumFeedItems.
-				for (len(feed.ItemKeys)+len(NewItems)) >= MaximumFeedItems-1 && len(feed.ItemKeys) > 0 {
-					// Ok, get the last key
-					lastKey := feed.ItemKeys[len(feed.ItemKeys)-1]
-					// insert it onto the end of the deleted item list.
-					feed.DeletedItemKeys = append(feed.DeletedItemKeys, lastKey)
-					// If we are updating this key, then remove it from this list.  No need to waste
-					// time.
-					for i, item := range UpdatedItems {
-						if item.ItemKey.Equal(lastKey) {
-							UpdatedItems = append(UpdatedItems[:i], UpdatedItems[i+1:]...)
-						}
+			// Nope, lets insert it!  First, should we knock off an item?  e need to stay below MaximumFeedItems.
+			for (len(feed.ItemKeys)+len(NewItems)) >= MaximumFeedItems && len(feed.ItemKeys) > 0 {
+				// Need to kill an item.  So get the last key
+				lastKey := feed.ItemKeys[len(feed.ItemKeys)-1]
+				// insert it onto the end of the deleted item list.
+				feed.DeletedItemKeys = append(feed.DeletedItemKeys, lastKey)
+				// If we are updating this key, then remove it from this list.  No need to waste
+				// time.
+				for i, item := range UpdatedItems {
+					if item.ItemKey.Equal(lastKey) {
+						UpdatedItems = append(UpdatedItems[:i], UpdatedItems[i+1:]...)
 					}
-					// And finally, pop the item
-					feed.ItemKeys = feed.ItemKeys[:len(feed.ItemKeys)-1]
 				}
+				// And finally, pop the item
+				feed.ItemKeys = feed.ItemKeys[:len(feed.ItemKeys)-1]
 			}
 			// Only insert if there are less then MaximumFeedItems already to be inserted.
 			// This works since any later item will have been updated after.
