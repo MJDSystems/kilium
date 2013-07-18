@@ -166,6 +166,8 @@ func (f *Feed) Resolve(siblingsCount int) error {
 		f.InsertedItemKeys = *InsertSliceSort(&f.InsertedItemKeys, &siblings[i].InsertedItemKeys).(*ItemKeyList)
 		f.DeletedItemKeys = *InsertSliceSort(&f.DeletedItemKeys, &siblings[i].DeletedItemKeys).(*ItemKeyList)
 	}
+	RemoveSliceElements(&f.InsertedItemKeys, &f.ItemKeys)
+	RemoveSliceElements(&f.InsertedItemKeys, &f.DeletedItemKeys)
 	RemoveSliceElements(&f.ItemKeys, &f.DeletedItemKeys)
 
 	return nil

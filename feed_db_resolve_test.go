@@ -111,7 +111,7 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 		ItemKeys:        ItemKeyList{genItemKey(10, "A"), genItemKey(8, "B")},
 		DeletedItemKeys: ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")},
 
-		InsertedItemKeys: ItemKeyList{genItemKey(10, "A"), genItemKey(8, "B")},
+		InsertedItemKeys: ItemKeyList{genItemKey(10, "IA"), genItemKey(8, "IB")},
 	}
 
 	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
@@ -123,7 +123,7 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 
 	// Using same base data, add more keys.  Pretend A fell off a cliff, and add an E.  DeletedItems clears.
 	Entry.ItemKeys = ItemKeyList{genItemKey(100, "AA"), genItemKey(8, "B"), genItemKey(2, "E")}
-	Entry.InsertedItemKeys = Entry.ItemKeys
+	Entry.InsertedItemKeys = ItemKeyList{genItemKey(8, "IB"), genItemKey(2, "IE")}
 	Entry.DeletedItemKeys = ItemKeyList{}
 
 	// Clear the model to make a sibling.
@@ -151,6 +151,7 @@ func TestFeedItemsResolvingSimple(t *testing.T) { // Only ensures the lists turn
 	if reflect.DeepEqual(load.ItemKeys, test) != true {
 		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, test)
 	}
+	test = ItemKeyList{genItemKey(10, "IA"), genItemKey(8, "IB"), genItemKey(2, "IE")}
 	if reflect.DeepEqual(load.InsertedItemKeys, test) != true {
 		t.Errorf("Inserted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.InsertedItemKeys, test)
 	}
@@ -170,8 +171,7 @@ func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the l
 
 		ItemKeys:        ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B")},
 		DeletedItemKeys: ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")},
-		//Inserted item keys left untested here, as they may appear in the DeletedItemKeys list,
-		//But still be valid in the inserted item keys.
+		//Inserted item keys left untested here, as they are tested below
 	}
 
 	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
@@ -209,6 +209,66 @@ func TestFeedItemsResolvingPreDeletedItems(t *testing.T) { // Only ensures the l
 	test = ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")}
 	if reflect.DeepEqual(load.ItemKeys, test) != true {
 		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, test)
+	}
+}
+
+func TestFeedItemsResolvingPreDealtWithInsertedItems(t *testing.T) { // Only ensures the lists turn out what I want.
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	Entry := Feed{
+		Url: *testFeedUrl,
+
+		Title:     "First Title",
+		LastCheck: time.Date(2013, 7, 1, 0, 0, 0, 0, time.UTC),
+
+		NextCheck: time.Date(2013, 7, 1, 1, 0, 0, 0, time.UTC),
+
+		ItemKeys:         ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B")},
+		DeletedItemKeys:  ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")},
+		InsertedItemKeys: ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "IA"), genItemKey(8, "IB")},
+	}
+
+	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
+		t.Fatalf("Failed to create Entry's model (%s)", err)
+	}
+	if err := Entry.Save(); err != nil {
+		t.Fatalf("Failed to save Entry (%s)", err)
+	}
+
+	// Using same base data, add more keys.  Pretend A fell off a cliff, and add an E.  DeletedItems clears.
+	Entry.ItemKeys = ItemKeyList{genItemKey(100, "AA"), genItemKey(8, "B"), genItemKey(2, "E")}
+	Entry.InsertedItemKeys = ItemKeyList{genItemKey(40, "CC"), genItemKey(8, "IB"), genItemKey(2, "IE")}
+	Entry.DeletedItemKeys = ItemKeyList{}
+
+	// Clear the model to make a sibling.
+	Entry.Model = riak.Model{}
+	//And save
+	if err := con.NewModel("ConflictFeed", &Entry); err != nil {
+		t.Fatalf("Failed to create Entry's model (%s)", err)
+	}
+	if err := Entry.Save(); err != nil {
+		t.Fatalf("Failed to save Entry (%s)", err)
+	}
+
+	// Cause conflict
+	load := Feed{}
+	if err := con.LoadModel("ConflictFeed", &load); err != nil {
+		t.Fatalf("Failed to load conflict model  (%s)", err)
+	}
+
+	// Verify lists.
+	test := ItemKeyList{genItemKey(40, "CC"), genItemKey(30, "DD")}
+	if reflect.DeepEqual(load.DeletedItemKeys, test) != true {
+		t.Errorf("Deleted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.DeletedItemKeys, ItemKeyList{genItemKey(40, "C"), genItemKey(30, "D")})
+	}
+	test = ItemKeyList{genItemKey(100, "AA"), genItemKey(10, "A"), genItemKey(8, "B"), genItemKey(2, "E")}
+	if reflect.DeepEqual(load.ItemKeys, test) != true {
+		t.Errorf("Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.ItemKeys, test)
+	}
+	test = ItemKeyList{genItemKey(10, "IA"), genItemKey(8, "IB"), genItemKey(2, "IE")}
+	if reflect.DeepEqual(load.InsertedItemKeys, test) != true {
+		t.Errorf("Inserted Item Keys didn't match as expected!  Returned: %v, Wanted: %v", load.InsertedItemKeys, test)
 	}
 }
 
