@@ -297,6 +297,7 @@ func GenerateParsedFeed(rand *rand.Rand) (out ParsedFeedData) {
 	out.Items = make([]ParsedFeedItem, MaximumFeedItems+20)
 	for i, _ := range out.Items {
 		out.Items[i].GenericKey = makeHash(key_uniquer + strconv.Itoa(rand.Int()))
+		out.Items[i].Title = strconv.Itoa(i)
 	}
 
 	return
