@@ -137,9 +137,9 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 	return true
 }
 
-func checkAllItemsDeleted(t *testing.T, feed *Feed, con *riak.Client) bool {
+func checkAllItemsDeleted(t *testing.T, itemKeyList ItemKeyList, con *riak.Client) bool {
 	ch := make(chan bool)
-	for _, itemKey := range feed.ItemKeys {
+	for _, itemKey := range itemKeyList {
 		go func(itemKey ItemKey, ch chan<- bool) {
 			modelItem := FeedItem{}
 			if err := con.LoadModel(itemKey.GetRiakKey(), &modelItem, riak.R1); err == riak.NotFound {
@@ -151,7 +151,7 @@ func checkAllItemsDeleted(t *testing.T, feed *Feed, con *riak.Client) bool {
 	}
 
 	problems := 0
-	for _, _ = range feed.ItemKeys {
+	for _, _ = range itemKeyList {
 		found := <-ch
 		if found {
 			//t.Errorf("Found deleted item %s", itemKey.GetRiakKey())
@@ -342,7 +342,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 		t.Fatalf("Failed to initialize feed model (%s)!", err)
 	} else if compareParsedToFinalFeed(t, &x, newLoadFeed, con) == false {
 		t.Fatalf("Inserted data did not match original data (minus overage!)")
-	} else if checkAllItemsDeleted(t, origLoadFeed, con) == false {
+	} else if checkAllItemsDeleted(t, origLoadFeed.ItemKeys, con) == false {
 		t.Fatalf("There are left over deleted items!")
 	}
 
