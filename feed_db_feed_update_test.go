@@ -425,6 +425,11 @@ func TestTwoItemsOneKey(t *testing.T) {
 }
 
 func TestFeedDealingWithOverLargeFeed(t *testing.T) {
+	// This test takes forever, so skip it if I don't care for my long tests.
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
 
