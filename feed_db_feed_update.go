@@ -85,8 +85,22 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	} else if err != nil {
 		return err
 	}
-	// First finish clean off all deleted items, and clean out inserted item keys.  Since either existing
-	// means a previous operation has been left in a bad state.  TBI
+	// First clean out inserted item keys.  This handles unfinished previous operations.
+	itemsBucket, err := con.Bucket("items")
+	if err != nil {
+		return err
+	}
+	for _, itemKey := range feed.InsertedItemKeys {
+		// Does this item exist?
+		if ok, err := itemsBucket.Exists(itemKey.GetRiakKey()); err != nil {
+			return err
+		} else if ok {
+			// Yep, so add it to the list.
+			feed.ItemKeys = append(feed.ItemKeys, itemKey)
+		}
+		// Otherwise non-existent items are dropped.  This is to avoid
+	}
+	feed.InsertedItemKeys = nil
 
 	// Next update the basic attributes (title basically)
 	feed.Title = feedData.Title
@@ -200,10 +214,6 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	}
 
 	// Finally delete items.
-	itemsBucket, err := con.Bucket("items")
-	if err != nil {
-		return err
-	}
 	for _, deleteItemKey := range feed.DeletedItemKeys {
 		go func(toDelete ItemKey) {
 			if obj, err := itemsBucket.Get(toDelete.GetRiakKey()); obj == nil {

@@ -354,6 +354,49 @@ func TestWithExistingToDeleteItems(t *testing.T) {
 	}
 }
 
+func TestWithExistingToInsertItems(t *testing.T) {
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	url := getUniqueExampleComUrl(t)
+
+	feedModel := CreateFeed(t, con, url)
+
+	feedModel.Title = "ASDF"
+	feedModel.InsertedItemKeys = ItemKeyList{
+		NewItemKey(1, makeHash("Key 1")),
+		NewItemKey(2, makeHash("Key 2 - DNE")),
+		NewItemKey(3, makeHash("Key 3")),
+		NewItemKey(4, makeHash("Key 4 - DNE")),
+	}
+	mustCreateEmptyItemAt(t, con, feedModel.InsertedItemKeys[0])
+	mustCreateEmptyItemAt(t, con, feedModel.InsertedItemKeys[2])
+
+	if err := feedModel.Save(); err != nil {
+		t.Fatalf("Failed to save preloaded content!")
+	}
+
+	feed := &ParsedFeedData{}
+	if err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
+		t.Errorf("Failed to update simple single feed (%s)!", err)
+	}
+
+	// Need to mention my empty items.  Not used before the insert call, as that could invalidate
+	// this whole test!
+	feed.Items = []ParsedFeedItem{
+		ParsedFeedItem{},
+		ParsedFeedItem{},
+	}
+
+	// Finally, load the feed again and verify properties!
+	loadFeed := &Feed{}
+	if err := con.LoadModel(feedModel.UrlKey(), loadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else if compareParsedToFinalFeed(t, feed, loadFeed, con) != true {
+		t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
+	}
+}
+
 func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)
