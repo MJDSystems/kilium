@@ -329,10 +329,10 @@ func TestWithExistingToDeleteItems(t *testing.T) {
 
 	feedModel.Title = "ASDF"
 	feedModel.DeletedItemKeys = ItemKeyList{
-		NewItemKey(1, makeHash("Key 1")),
-		NewItemKey(2, makeHash("Key 2 - DNE")),
-		NewItemKey(3, makeHash("Key 3")),
-		NewItemKey(4, makeHash("Key 4 - DNE")),
+		NewItemKey(1, makeHash("DKey 1"+key_uniquer)),
+		NewItemKey(2, makeHash("DKey 2 - DNE"+key_uniquer)),
+		NewItemKey(3, makeHash("DKey 3"+key_uniquer)),
+		NewItemKey(4, makeHash("DKey 4 - DNE"+key_uniquer)),
 	}
 	mustCreateEmptyItemAt(t, con, feedModel.DeletedItemKeys[0])
 	mustCreateEmptyItemAt(t, con, feedModel.DeletedItemKeys[2])
@@ -371,10 +371,10 @@ func TestWithExistingToInsertItems(t *testing.T) {
 
 	feedModel.Title = "ASDF"
 	feedModel.InsertedItemKeys = ItemKeyList{
-		NewItemKey(1, makeHash("Key 1")),
-		NewItemKey(2, makeHash("Key 2 - DNE")),
-		NewItemKey(3, makeHash("Key 3")),
-		NewItemKey(4, makeHash("Key 4 - DNE")),
+		NewItemKey(1, makeHash("IKey 1"+key_uniquer)),
+		NewItemKey(2, makeHash("IKey 2 - DNE"+key_uniquer)),
+		NewItemKey(3, makeHash("IKey 3"+key_uniquer)),
+		NewItemKey(4, makeHash("IKey 4 - DNE"+key_uniquer)),
 	}
 	mustCreateEmptyItemAt(t, con, feedModel.InsertedItemKeys[0])
 	mustCreateEmptyItemAt(t, con, feedModel.InsertedItemKeys[2])
