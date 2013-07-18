@@ -26,6 +26,7 @@ import (
 )
 
 var staticTestCon *riak.Client
+
 // This is a static string that changes on every invocation of the test suite.  It is meant to ensure
 // the keys are unique per run.
 var key_uniquer string
