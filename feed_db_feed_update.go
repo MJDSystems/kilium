@@ -90,6 +90,9 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	if err != nil {
 		return err
 	}
+
+	// Note, this insert items without caring about the 10,000 limit.  Of course, any regular inserted
+	// item will force the limit back down.
 	for _, itemKey := range feed.InsertedItemKeys {
 		// Does this item exist?
 		if ok, err := itemsBucket.Exists(itemKey.GetRiakKey()); err != nil {
