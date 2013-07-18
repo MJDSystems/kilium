@@ -499,4 +499,31 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	} else if compareParsedToFinalFeed(t, &x, newLoadFeed, con) == false {
 		t.Fatalf("Inserted data did not match original data + updates")
 	}
+
+	t.Log("Insert undersized to make full (from max-1 + 2 = max)")
+
+	//First use the loaded model above to kick off an element.
+	newLoadFeed.ItemKeys = newLoadFeed.ItemKeys[:len(newLoadFeed.ItemKeys)-1]
+	newLoadFeed.Save()
+	fullItems = x.Items[:len(newLoadFeed.ItemKeys)]
+	// Now, using the above feed data, stick two items in.  Give them a pubdate far into the future,
+	// with a new unused key.
+	x.Items = make([]ParsedFeedItem, 2)
+	x.Items[0].GenericKey = makeHash(key_uniquer + "_New_1")
+	x.Items[0].PubDate = time.Now().Add(time.Hour * 24 * 365 * 100) // Make it far into the future!
+	x.Items[0].GenericKey = makeHash(key_uniquer + "_New_2")
+	x.Items[0].PubDate = time.Now().Add(time.Hour*24*365*100 - 1) // Make it far into the future!
+
+	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+		t.Fatalf("Failed to update simple single feed (%s)!", err)
+	}
+	x.Items = append(x.Items, fullItems...)
+	x.Items = x.Items[:MaximumFeedItems]
+	if err := con.LoadModel(feedModel.UrlKey(), newLoadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else if compareParsedToFinalFeed(t, &x, newLoadFeed, con) == false {
+		t.Fatalf("Inserted data did not match original data + updates")
+	} else if len(newLoadFeed.ItemKeys) != MaximumFeedItems {
+		t.Fatalf("Somehow, didn't get the full feed back!")
+	}
 }
