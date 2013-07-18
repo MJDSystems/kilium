@@ -480,4 +480,22 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	} else if compareParsedToFinalFeed(t, &x, newLoadFeed, con) == false {
 		t.Fatalf("Inserted data did not match original data (minus overage!)")
 	}
+
+	t.Log("Update + insert existing items")
+
+	newFeedData = getFeedDataFor(t, "simple", 2)
+	fixFeedForMerging(newFeedData)
+	fullItems = x.Items[3:] // Kill the first five items, as they are what are going to end up updated.
+	x.Items = newFeedData.Items
+
+	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+		t.Fatalf("Failed to update simple single feed (%s)!", err)
+	}
+	x.Items = append(x.Items, fullItems...)
+	x.Items = x.Items[:MaximumFeedItems]
+	if err := con.LoadModel(feedModel.UrlKey(), newLoadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else if compareParsedToFinalFeed(t, &x, newLoadFeed, con) == false {
+		t.Fatalf("Inserted data did not match original data + updates")
+	}
 }
