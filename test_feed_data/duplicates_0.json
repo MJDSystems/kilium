@@ -1,0 +1,38 @@
+{
+	"Title": "Test Feed 1",
+	"Items": [
+		{
+			"GenericKey": "SXRlbTEtSUQ=",
+			"Title": "Item 1, nicely made!",
+			"Author": "John Doe",
+			"Content": "A nicely formatted item that will be updated",
+			"Url": {
+				"Scheme": "http",
+				"Opaque": "",
+				"User": null,
+				"Host": "example.com",
+				"Path": "/item1",
+				"RawQuery": "",
+				"Fragment": ""
+			},
+			"PubDate": "2013-07-08T02:03:32-04:00"
+		},
+		{
+			"GenericKey": "SXRlbTEtSUQ=",
+			"Title": "Item 2!",
+			"Author": "John Doe",
+			"Content": "Old as old!  Not sure why this is here.",
+			"Url": {
+				"Scheme": "http",
+				"Opaque": "",
+				"User": null,
+				"Host": "example.com",
+				"Path": "/item2",
+				"RawQuery": "",
+				"Fragment": ""
+			},
+			"PubDate": "2012-07-08T02:03:32-04:00"
+		}
+	],
+	"NextCheckTime": "0001-01-01T00:00:00Z"
+}

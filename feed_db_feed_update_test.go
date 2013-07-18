@@ -404,6 +404,26 @@ func TestWithExistingToInsertItems(t *testing.T) {
 	}
 }
 
+func TestTwoItemsOneKey(t *testing.T) {
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	url := getUniqueExampleComUrl(t)
+
+	feedModel := CreateFeed(t, con, url)
+
+	feed := MustUpdateFeedTo(t, con, url, "duplicates", 1)
+	feed.Items = feed.Items[:1]
+
+	// Finally, load the feed again and verify properties!
+	loadFeed := &Feed{}
+	if err := con.LoadModel(feedModel.UrlKey(), loadFeed); err != nil {
+		t.Fatalf("Failed to initialize feed model (%s)!", err)
+	} else if compareParsedToFinalFeed(t, feed, loadFeed, con) != true {
+		t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
+	}
+}
+
 func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	con := getTestConnection(t)
 	defer killTestDb(con, t)

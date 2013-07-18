@@ -17,6 +17,8 @@
 package main
 
 import (
+	"bytes"
+
 	"errors"
 
 	"net/url"
@@ -172,9 +174,20 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 			// Only insert if there are less then MaximumFeedItems already to be inserted.
 			// This works since any later item will have been updated after.
 			if len(NewItems) < MaximumFeedItems {
-				NewItems = append(NewItems, ToProcess{
-					Data: rawItem,
-				})
+				// Also, make sure we aren't inserting the same item twice.  If it is duplicated, the
+				// second item is guaranteed to be later.  So just drop it.
+				found := false
+				for _, toProcess := range NewItems {
+					if bytes.Compare(toProcess.Data.GenericKey, rawItem.GenericKey) == 0 {
+						found = true
+						break
+					}
+				}
+				if found != true {
+					NewItems = append(NewItems, ToProcess{
+						Data: rawItem,
+					})
+				}
 			}
 		}
 	}
