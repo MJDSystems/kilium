@@ -173,7 +173,7 @@ func checkAllItemsDeleted(t *testing.T, itemKeyList ItemKeyList, con *riak.Clien
 
 func CreateFeed(t *testing.T, con *riak.Client, Url *url.URL) *Feed {
 	feedModel := &Feed{Url: *Url}
-	if err := con.LoadModel(feedModel.UrlKey(), feedModel); err == nil && err != riak.NotFound {
+	if err := con.LoadModel(feedModel.UrlKey(), feedModel); err != nil && err != riak.NotFound {
 		t.Fatalf("Failed to initialize feed model (%s)!", err)
 	} else {
 		modelElement := feedModel.Model
