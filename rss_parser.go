@@ -89,7 +89,7 @@ func (l ParsedFeedItemList) VerifySort() bool {
 	return true
 }
 
-func parseRssFeed(feedContents []byte) (*ParsedFeedData, error) {
+func parseRssFeed(feedContents []byte, fetchedAt time.Time) (*ParsedFeedData, error) {
 	feed := rss.New(0, true, nil, nil)
 
 	err := feed.FetchBytes("", feedContents, charset.NewReader)
@@ -154,7 +154,11 @@ func parseRssFeed(feedContents []byte) (*ParsedFeedData, error) {
 		output.Items = append(output.Items, nextItem)
 	}
 
+	// Ensure this is in the correct order.  For now, just sort it.
 	sort.Sort(output.Items)
+
+	// Finally, set a next check time.  For now, just hardcode 1 hour.
+	output.NextCheckTime = fetchedAt.Add(time.Hour)
 
 	return &output, nil
 }
@@ -168,7 +172,7 @@ func FeedParser(in <-chan RawFeed, out chan<- FeedParserOut, errChan chan<- Feed
 	for {
 		if next, ok := <-in; ok {
 
-			data, err := parseRssFeed(next.Data)
+			data, err := parseRssFeed(next.Data, next.FetchedAt)
 			if err == nil {
 				out <- FeedParserOut{Data: *data, Url: next.Url}
 			} else {

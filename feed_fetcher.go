@@ -21,11 +21,14 @@ import (
 
 	"net/http"
 	"net/url"
+
+	"time"
 )
 
 type RawFeed struct {
-	Data []byte
-	Url  url.URL
+	Data      []byte
+	Url       url.URL
+	FetchedAt time.Time
 }
 
 type FeedError struct {
@@ -48,7 +51,7 @@ func FeedFetcher(in <-chan url.URL, out chan<- RawFeed, errChan chan<- FeedError
 			if err != nil {
 				errChan <- FeedError{err, next}
 			} else {
-				out <- RawFeed{content, next}
+				out <- RawFeed{content, next, time.Now()}
 			}
 		} else {
 			break

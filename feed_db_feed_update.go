@@ -109,6 +109,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 
 	// Next update the basic attributes (title basically)
 	feed.Title = feedData.Title
+	feed.NextCheck = feedData.NextCheckTime
 
 	/* Next find all the feed items to insert/update.  If the item doesn't exist, create it's id and
 	 * mark for insert.  Otherwise mark it for an read/update/store pass.  Make sure to mark for
