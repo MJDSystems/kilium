@@ -100,10 +100,9 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 		}
 	}(itemCh, itemChOut)
 
-	var itemChIn chan FeedItemCh
-
 	for _, itemKey := range model.ItemKeys {
-		itemChIn = make(chan FeedItemCh) // Make this here, so that the last loop doesn't overwrite it.
+		itemChIn := make(chan FeedItemCh)
+
 		go func(itemKey ItemKey, itemChOut, itemChIn chan FeedItemCh) {
 			defer close(itemChOut)
 
@@ -113,15 +112,13 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 			}
 			itemChOut <- FeedItemCh{modelItem, itemChIn}
 		}(itemKey, itemChOut, itemChIn)
+
 		itemChOut = itemChIn
 	}
-	// Guard this since if there are no items, itemChIn is nil.  Thus close the original incoming
-	// channel instead.  That way no leaks occur.
-	if len(model.ItemKeys) != 0 {
-		close(itemChIn)
-	} else {
-		close(itemChOut)
-	}
+	// This ensures the feeder go routine will eventually quit.  It either closes its initial input,
+	// or the final channel it will get (since itemChOut is equal to the last channel the go routine
+	// will read from, since it stores the last itemChIn from above).
+	close(itemChOut)
 
 	//Compare saved feed items.  This means a trip through riak!  The order should match though ...
 	for i, _ := range model.ItemKeys {
