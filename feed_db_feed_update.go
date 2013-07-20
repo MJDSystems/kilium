@@ -80,17 +80,17 @@ func itemDiffersFromModel(feedItem ParsedFeedItem, itemModel *FeedItem) bool {
 		itemModel.PubDate != feedItem.PubDate
 }
 
-func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids <-chan uint64) error {
+func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids <-chan uint64) (*Feed, error) {
 	feed := &Feed{Url: feedUrl}
 	if err := con.LoadModel(feed.UrlKey(), feed); err == riak.NotFound {
-		return FeedNotFound
+		return nil, FeedNotFound
 	} else if err != nil {
-		return err
+		return nil, err
 	}
 	// First clean out inserted item keys.  This handles unfinished previous operations.
 	itemsBucket, err := con.Bucket("items")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Note, this insert items without caring about the 10,000 limit.  Of course, any regular inserted
@@ -98,7 +98,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	for _, itemKey := range feed.InsertedItemKeys {
 		// Does this item exist?
 		if ok, err := itemsBucket.Exists(itemKey.GetRiakKey()); err != nil {
-			return err
+			return nil, err
 		} else if ok {
 			// Yep, so add it to the list.
 			feed.ItemKeys = append(feed.ItemKeys, itemKey)
@@ -136,7 +136,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 			}
 
 			if err := con.LoadModel(p.ItemKey.GetRiakKey(), p.Model); err != nil {
-				return err
+				return nil, err
 			}
 
 			// Ok, now is this have a new pub date?  If so, pull it out of its current position, and
@@ -207,7 +207,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 
 	// Ok, we must save here.  Otherwise planned changes may occur that will not be cleaned up!
 	if err := feed.Save(); err != nil {
-		return err
+		return nil, err
 	}
 
 	errCh := make(chan error) // All of the errors go into here, to be pulled out.
@@ -252,13 +252,32 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	drainErrorChannelIntoSlice(errCh, &errs, len(UpdatedItems))
 	drainErrorChannelIntoSlice(errCh, &errs, deletedItemCount)
 	if len(errs) != 0 {
-		return MultiError(errs)
+		return nil, MultiError(errs)
 	}
 
 	if err := feed.Save(); err != nil {
-		return err
+		return nil, err
 	}
 
-	_, _ = NewItems, UpdatedItems
-	return nil
+	return feed, nil
+}
+
+type UpdatedModel struct {
+	Url   url.URL
+	Model *Feed
+}
+
+func UpdateFeed(con *riak.Client, idGenerator <-chan uint64, in <-chan FeedParserOut, out chan<- UpdatedModel, errChan chan<- FeedError) {
+	for {
+		if next, ok := <-in; ok {
+			model, err := updateFeed(con, next.Url, next.Data, idGenerator)
+			if err != nil {
+				errChan <- FeedError{err, next.Url}
+			} else {
+				out <- UpdatedModel{next.Url, model}
+			}
+		} else {
+			break
+		}
+	}
 }

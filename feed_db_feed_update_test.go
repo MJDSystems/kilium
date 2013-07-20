@@ -188,7 +188,7 @@ func MustUpdateFeedTo(t *testing.T, con *riak.Client, url *url.URL, feedName str
 		feed = getFeedDataFor(t, feedName, i)
 		fixFeedForMerging(feed)
 
-		if err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
+		if _, err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
 			t.Fatalf("Failed to update simple single feed (%s)!", err)
 		}
 	}
@@ -215,14 +215,14 @@ func TestSingleFeedInsert(t *testing.T) {
 
 	url := getUniqueExampleComUrl(t)
 
-	err := updateFeed(con, *url, *feed, testIdGenerator)
+	_, err := updateFeed(con, *url, *feed, testIdGenerator)
 	if err != FeedNotFound {
 		t.Fatalf("Failed to insert simple single feed (%s)!", err)
 	}
 
 	feedModel := CreateFeed(t, con, url)
 
-	err = updateFeed(con, *url, *feed, testIdGenerator)
+	updatedFeed, err := updateFeed(con, *url, *feed, testIdGenerator)
 	if err != nil {
 		t.Errorf("Failed to update simple single feed (%s)!", err)
 	}
@@ -231,8 +231,13 @@ func TestSingleFeedInsert(t *testing.T) {
 	loadFeed := &Feed{}
 	if err = con.LoadModel(feedModel.UrlKey(), loadFeed); err != nil {
 		t.Fatalf("Failed to initialize feed model (%s)!", err)
-	} else if compareParsedToFinalFeed(t, feed, loadFeed, con) != true {
-		t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
+	} else {
+		if compareParsedToFinalFeed(t, feed, loadFeed, con) != true {
+			t.Errorf("Saved feed does not match what was inserted! Original:\n%+v\nLoaded:\n%+v", feed, loadFeed)
+		}
+		if !reflect.DeepEqual(loadFeed, updatedFeed) {
+			t.Errorf("Returned model from saving differs from loaded model! Original:\n%+v\nLoaded:\n%+v", updatedFeed, loadFeed)
+		}
 	}
 }
 
@@ -343,7 +348,7 @@ func TestWithExistingToDeleteItems(t *testing.T) {
 	}
 
 	feed := &ParsedFeedData{}
-	if err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
 		t.Errorf("Failed to update simple single feed (%s)!", err)
 	}
 
@@ -384,7 +389,7 @@ func TestWithExistingToInsertItems(t *testing.T) {
 	}
 
 	feed := &ParsedFeedData{}
-	if err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, *feed, testIdGenerator); err != nil {
 		t.Errorf("Failed to update simple single feed (%s)!", err)
 	}
 
@@ -441,7 +446,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	t.Log("Test creating overlarge feed.")
 
 	x := GenerateParsedFeed(rand)
-	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, x, testIdGenerator); err != nil {
 		t.Fatalf("Failed to update simple single feed (%s)!", err)
 	}
 
@@ -457,7 +462,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	t.Log("Test completely replacing said feed with a new Oversized feed.")
 
 	x = GenerateParsedFeed(rand) // This should generate all new items.
-	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, x, testIdGenerator); err != nil {
 		t.Fatalf("Failed to replace simple single feed (%s)!", err)
 	}
 
@@ -479,7 +484,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	fullItems := x.Items
 	x.Items = newFeedData.Items
 
-	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, x, testIdGenerator); err != nil {
 		t.Fatalf("Failed to update simple single feed (%s)!", err)
 	}
 	x.Items = append(x.Items, fullItems[:MaximumFeedItems-len(newFeedData.Items)]...)
@@ -496,7 +501,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	fullItems = x.Items[3:] // Kill the first four items, as they are what are going to end up updated.
 	x.Items = newFeedData.Items
 
-	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, x, testIdGenerator); err != nil {
 		t.Fatalf("Failed to update simple single feed (%s)!", err)
 	}
 	x.Items = append(x.Items, fullItems...)
@@ -514,7 +519,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	fullItems = x.Items[3:] // Kill the first five items, as they are what are going to end up updated.
 	x.Items = newFeedData.Items
 
-	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, x, testIdGenerator); err != nil {
 		t.Fatalf("Failed to update simple single feed (%s)!", err)
 	}
 	x.Items = append(x.Items, fullItems...)
@@ -539,7 +544,7 @@ func TestFeedDealingWithOverLargeFeed(t *testing.T) {
 	x.Items[0].GenericKey = makeHash(key_uniquer + "_New_2")
 	x.Items[0].PubDate = time.Now().Add(time.Hour*24*365*100 - 1) // Make it far into the future!
 
-	if err := updateFeed(con, *url, x, testIdGenerator); err != nil {
+	if _, err := updateFeed(con, *url, x, testIdGenerator); err != nil {
 		t.Fatalf("Failed to update simple single feed (%s)!", err)
 	}
 	x.Items = append(x.Items, fullItems...)
