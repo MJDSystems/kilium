@@ -20,19 +20,12 @@ import (
 	"fmt"
 	"sort"
 
-	"time"
-
+	"reflect"
 	"testing"
 )
 
-func compareParsedFeedData(original ParsedFeedData, parsed ParsedFeedData, fetchTime time.Time) bool {
-	return customDeepEqual(original, parsed, []string{"NextCheckTime"}) &&
-		// Verify this seperately since the original data can't contain the right value.
-		parsed.NextCheckTime.Equal(fetchTime.Add(time.Hour))
-}
-
 // Note, original is modified to preform the compare operations!
-func verifyParsedAtomFeed(t *testing.T, original, parsed ParsedFeedData, fetchTime time.Time) {
+func verifyParsedAtomFeed(t *testing.T, original, parsed ParsedFeedData) {
 	origItems := original.Items
 	original.Items = make([]ParsedFeedItem, len(origItems))
 	copy(original.Items, origItems)
@@ -47,13 +40,13 @@ func verifyParsedAtomFeed(t *testing.T, original, parsed ParsedFeedData, fetchTi
 		}
 	}
 
-	if !compareParsedFeedData(original, parsed, fetchTime) {
+	if !reflect.DeepEqual(original, parsed) {
 		t.Errorf("Failed to properly parse atom feed,\nOriginal:\n(%+v)\nParsed:\n(%+v)", original, parsed)
 	}
 }
 
 // Note, original is modified to preform the compare operations!
-func verifyParsedRssFeed(t *testing.T, original, parsed ParsedFeedData, fetchTime time.Time) {
+func verifyParsedRssFeed(t *testing.T, original, parsed ParsedFeedData) {
 	origItems := original.Items
 	original.Items = make([]ParsedFeedItem, len(origItems))
 	copy(original.Items, origItems)
@@ -75,27 +68,26 @@ func verifyParsedRssFeed(t *testing.T, original, parsed ParsedFeedData, fetchTim
 		item.GenericKey = makeHash(string(item.GenericKey))
 	}
 
-	if !compareParsedFeedData(original, parsed, fetchTime) {
+	if !reflect.DeepEqual(original, parsed) {
 		t.Errorf("Failed to properly parse rss feed,\nOriginal:\n(%+v)\nParsed:\n(%+v)", original, parsed)
 	}
 }
 
 func TestSimpleFeedParserTest(t *testing.T) {
-	fetchTime := time.Now()
+	feed := getFeedDataFor(t, "simple", 0)
 
 	atom, _ := produceFeedStructureFromData(getFeedDataFor(t, "simple", 0)).ToAtom()
 	rss, _ := produceFeedStructureFromData(getFeedDataFor(t, "simple", 0)).ToRss()
 
-	atomOut, e := parseRssFeed([]byte(atom), fetchTime)
+	atomOut, e := parseRssFeed([]byte(atom), feed.FetchedAt)
 	if e != nil {
 		t.Fatalf("Failed to parse atom feed (%s)", e)
 	}
-	rssOut, e := parseRssFeed([]byte(rss), fetchTime)
+	rssOut, e := parseRssFeed([]byte(rss), feed.FetchedAt)
 	if e != nil {
 		t.Fatalf("Failed to parse atom feed (%s)", e)
 	}
-	feed := getFeedDataFor(t, "simple", 0)
 
-	verifyParsedAtomFeed(t, *feed, *atomOut, fetchTime)
-	verifyParsedRssFeed(t, *feed, *rssOut, fetchTime)
+	verifyParsedAtomFeed(t, *feed, *atomOut)
+	verifyParsedRssFeed(t, *feed, *rssOut)
 }

@@ -40,6 +40,7 @@ type ParsedFeedData struct {
 
 	Items ParsedFeedItemList
 
+	FetchedAt     time.Time
 	NextCheckTime time.Time
 }
 
@@ -157,6 +158,8 @@ func parseRssFeed(feedContents []byte, fetchedAt time.Time) (*ParsedFeedData, er
 	// Ensure this is in the correct order.  For now, just sort it.
 	sort.Sort(output.Items)
 
+	//Set the fetch time, to ensure everything is correct.
+	output.FetchedAt = fetchedAt
 	// Finally, set a next check time.  For now, just hardcode 1 hour.
 	output.NextCheckTime = fetchedAt.Add(time.Hour)
 

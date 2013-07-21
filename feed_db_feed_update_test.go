@@ -70,6 +70,9 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 	if !data.NextCheckTime.Equal(model.NextCheck) {
 		t.Errorf("Next time to check feed doesn't match %#v vs %#v!", data.NextCheckTime, model.NextCheck)
 	}
+	if !data.FetchedAt.Equal(model.LastCheck) {
+		t.Errorf("Fetch time from feed doesn't match %#v vs %#v!", data.NextCheckTime, model.NextCheck)
+	}
 
 	if len(data.Items) != len(model.ItemKeys) {
 		if len(data.Items) > MaximumFeedItems {
