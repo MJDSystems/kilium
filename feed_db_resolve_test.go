@@ -26,16 +26,13 @@ import (
 
 	"testing"
 
+	"strconv"
 	"time"
 
 	riak "github.com/tpjg/goriakpbc"
 )
 
 var testFeedUrl, _ = url.Parse("http://example.com/feed.rss")
-
-func compareFeeds(f1, f2 Feed) bool {
-	return customDeepEqual(f1, f2, []string{"Model"})
-}
 
 func compareItems(i1, i2 FeedItem) bool {
 	return customDeepEqual(i1, i2, []string{"Model"})
@@ -67,6 +64,7 @@ func TestFeedAtributesResolving(t *testing.T) {
 	if err := con.NewModel("ConflictFeed", &EntryA); err != nil {
 		t.Fatalf("Failed to create EntryA's model (%s)", err)
 	}
+	EntryA.Indexes()[LastCheckIndexName] = strconv.FormatInt(EntryA.NextCheck.Unix(), 10)
 	if err := EntryA.Save(); err != nil {
 		t.Fatalf("Failed to save EntryA (%s)", err)
 	}
@@ -74,6 +72,7 @@ func TestFeedAtributesResolving(t *testing.T) {
 	if err := con.NewModel("ConflictFeed", &EntryB); err != nil {
 		t.Fatalf("Failed to create EntryB's model (%s)", err)
 	}
+	EntryB.Indexes()[LastCheckIndexName] = strconv.FormatInt(EntryB.NextCheck.Unix(), 10)
 	if err := EntryB.Save(); err != nil {
 		t.Fatalf("Failed to save EntryB (%s)", err)
 	}
@@ -82,8 +81,13 @@ func TestFeedAtributesResolving(t *testing.T) {
 	load := Feed{}
 	if err := con.LoadModel("ConflictFeed", &load); err != nil {
 		t.Fatalf("Failed to load conflict model  (%s)", err)
-	} else if customDeepEqual(EntryB, load, []string{"Model", "ItemKeys", "DeletedItemKeys", "InsertedItemKeys"}) == false {
-		t.Errorf("Resolved model does not match latest update (old, new) (\n%+v, \n%+v)", EntryB, load)
+	} else {
+		if customDeepEqual(EntryB, load, []string{"Model", "ItemKeys", "DeletedItemKeys", "InsertedItemKeys"}) == false {
+			t.Errorf("Resolved model does not match latest update (old, new) (\n%+v, \n%+v)", EntryB, load)
+		}
+		if reflect.DeepEqual(EntryB.Indexes(), load.Indexes()) == false {
+			t.Errorf("Resolved model's indexes don't match latest update (old, new) (\n%+v, \n%+v)", EntryB.Indexes(), load.Indexes())
+		}
 	}
 }
 
