@@ -17,6 +17,8 @@
 package main
 
 import (
+	"fmt"
+
 	"io/ioutil"
 
 	"net/http"
@@ -34,6 +36,10 @@ type RawFeed struct {
 type FeedError struct {
 	Err error
 	Url url.URL
+}
+
+func (e FeedError) Error() string {
+	return fmt.Sprintf("Error while dealing with url %s: %s", e.Url.String(), e.Err)
 }
 
 func FeedFetcher(in <-chan url.URL, out chan<- RawFeed, errChan chan<- FeedError) {
