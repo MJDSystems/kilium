@@ -17,6 +17,8 @@
 package main
 
 import (
+	"errors"
+	"net/url"
 	"time"
 
 	"strconv"
@@ -54,5 +56,50 @@ func TestRssMasterHandleAddRequest(t *testing.T) {
 		t.Errorf("Failed to load new feed! (%s)", err)
 	} else if loadFeed.NextCheck.IsZero() {
 		t.Errorf("Next check time on empty feed is zero! (Is: %s)", loadFeed.NextCheck)
+	}
+}
+
+func TestRssMasterPollSingleFeed(t *testing.T) {
+	con := getTestConnection(t)
+	defer killTestDb(con, t)
+
+	Url := getUniqueExampleComUrl(t)
+
+	if err := RssMasterHandleAddRequest(con, *Url); err != nil {
+		t.Fatalf("Failed to create fresh new feed! (%s)", err)
+	}
+
+	// Make channels for requests, and start a fake handler that alternates between sending success
+	// and failures.  Failures are left largely unhandled, but at least we should see the test finish!
+	inputCh := make(chan url.URL)
+	defer close(inputCh)
+	outputCh := make(chan FeedError)
+
+	feedsParsed := 0
+
+	go func(inputCh <-chan url.URL, outputCh chan<- FeedError) {
+		defer close(outputCh)
+		for {
+			if next, ok := <-inputCh; !ok {
+				break
+			} else {
+				feedsParsed++
+				outputCh <- FeedError{Url: next, Err: nil} // SUCCESS!!!
+			}
+
+			if next, ok := <-inputCh; !ok {
+				break
+			} else {
+				feedsParsed++
+				outputCh <- FeedError{Url: next, Err: errors.New("Random test failure!")} // FAILURE!!!
+			}
+		}
+	}(inputCh, outputCh)
+
+	// And try the fetch!
+	RssMasterPollFeeds(con, inputCh, outputCh)
+	t.Log(feedsParsed)
+	if feedsParsed != 1 {
+		t.Errorf("Failed to parse the expected number of feeds.  Wanted 1, got %v", feedsParsed)
 	}
 }

@@ -17,7 +17,11 @@
 package main
 
 import (
+	"log"
+
 	"net/url"
+	"strconv"
+	"time"
 
 	riak "github.com/tpjg/goriakpbc"
 )
@@ -48,6 +52,39 @@ func RssMasterHandleAddRequest(con *riak.Client, Url url.URL) error {
 	return nil
 }
 
+func RssMasterPollFeeds(con *riak.Client, InputCh chan<- url.URL, OutputCh <-chan FeedError) {
+	bucket, err := con.NewBucket("feeds")
+	if err != nil {
+		log.Println("Failed to get feed bucket:", err)
+	}
+	// -62135596800 is Go's zero time according to Unix's time format.  This is what empty feeds have for their check time.
+	// Nothing should appear before that.
+	keys_to_poll, err := bucket.IndexQueryRange(NextCheckIndexName, "-62135596800", strconv.FormatInt(time.Now().Unix(), 10))
+	var errors []error
+
+	valid_keys := 0
+	for _, key := range keys_to_poll {
+		var loadFeed Feed
+		if err := con.LoadModel(key, &loadFeed); err != nil {
+			errors = append(errors, err)
+		} else {
+			log.Println(loadFeed.Url)
+			valid_keys++
+			go func(Url url.URL, inputCh chan<- url.URL) {
+				inputCh <- Url
+			}(loadFeed.Url, InputCh)
+		}
+	}
+	for i := 0; i < valid_keys; i++ {
+		if err := <-OutputCh; err.Err != nil {
+			errors = append(errors, err)
+		}
+	}
+	if len(errors) != 0 {
+		log.Println(MultiError(errors))
+	}
+}
+
 func NewRssMaster(con *riak.Client, idGenerator <-chan uint64) (master RssMaster) {
 	AddRequestCh := make(chan AddFeedRequest)
 	master = RssMaster{
@@ -65,6 +102,13 @@ func NewRssMaster(con *riak.Client, idGenerator <-chan uint64) (master RssMaster
 			next.ResponseCh <- RssMasterHandleAddRequest(con, next.Url)
 		}
 	}(con, AddRequestCh)
+	go func(con *riak.Client, InputCh chan<- url.URL, OutputCh <-chan FeedError) {
+		tick := time.Tick(5 * time.Minute)
+		for {
+			<-tick //Pause and wait for 5 minutes to pass.  This is just to batch requests when possible.
+			RssMasterPollFeeds(con, InputCh, OutputCh)
+		}
+	}(con, master.pipeline.InputCh, master.pipeline.OutputCh)
 
 	return
 }
