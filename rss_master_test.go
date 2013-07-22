@@ -19,6 +19,7 @@ package main
 import (
 	"time"
 
+	"strconv"
 	"testing"
 )
 
@@ -36,6 +37,8 @@ func TestRssMasterHandleAddRequest(t *testing.T) {
 		t.Errorf("Failed to load just created model! (%s)", err)
 	} else if !loadFeed.NextCheck.IsZero() {
 		t.Errorf("Next check time on empty feed isn't zero! (Is: %s)", loadFeed.NextCheck)
+	} else if loadFeed.Indexes()[NextCheckIndexName] != strconv.FormatInt(loadFeed.NextCheck.Unix(), 10) {
+		t.Errorf("Next check time index on empty feed isn't zero! (Is: %v)", loadFeed.Indexes()[NextCheckIndexName])
 	}
 
 	loadFeed.NextCheck = loadFeed.NextCheck.Add(time.Hour * 24 * 365 * 200) //Bring us to something more recent.

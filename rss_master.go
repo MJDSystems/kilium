@@ -39,8 +39,11 @@ func RssMasterHandleAddRequest(con *riak.Client, Url url.URL) error {
 		return err
 	} else if err == nil {
 		return nil
-	} else if err = feedModel.Save(); err != nil { // Implicitly err == riak.NotFound
-		return err
+	} else { // Implicitly err == riak.NotFound
+		feedModel.Indexes()[NextCheckIndexName] = strconv.FormatInt(time.Time{}.Unix(), 10)
+		if err = feedModel.Save(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

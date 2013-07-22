@@ -64,7 +64,7 @@ func TestFeedAtributesResolving(t *testing.T) {
 	if err := con.NewModel("ConflictFeed", &EntryA); err != nil {
 		t.Fatalf("Failed to create EntryA's model (%s)", err)
 	}
-	EntryA.Indexes()[LastCheckIndexName] = strconv.FormatInt(EntryA.NextCheck.Unix(), 10)
+	EntryA.Indexes()[NextCheckIndexName] = strconv.FormatInt(EntryA.NextCheck.Unix(), 10)
 	if err := EntryA.Save(); err != nil {
 		t.Fatalf("Failed to save EntryA (%s)", err)
 	}
@@ -72,7 +72,7 @@ func TestFeedAtributesResolving(t *testing.T) {
 	if err := con.NewModel("ConflictFeed", &EntryB); err != nil {
 		t.Fatalf("Failed to create EntryB's model (%s)", err)
 	}
-	EntryB.Indexes()[LastCheckIndexName] = strconv.FormatInt(EntryB.NextCheck.Unix(), 10)
+	EntryB.Indexes()[NextCheckIndexName] = strconv.FormatInt(EntryB.NextCheck.Unix(), 10)
 	if err := EntryB.Save(); err != nil {
 		t.Fatalf("Failed to save EntryB (%s)", err)
 	}

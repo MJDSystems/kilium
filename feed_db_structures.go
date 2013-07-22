@@ -56,7 +56,7 @@ type FeedItem struct {
 	riak.Model `riak:"items"`
 }
 
-const LastCheckIndexName = "last_check_int"
+const NextCheckIndexName = "next_check_int"
 
 type ItemKey []byte
 
@@ -174,7 +174,7 @@ func (f *Feed) Resolve(siblingsCount int) error {
 	RemoveSliceElements(&f.ItemKeys, &f.DeletedItemKeys)
 
 	// Since this index just matches a data field, just use that.
-	f.Indexes()[LastCheckIndexName] = strconv.FormatInt(f.NextCheck.Unix(), 10)
+	f.Indexes()[NextCheckIndexName] = strconv.FormatInt(f.NextCheck.Unix(), 10)
 
 	return nil
 }

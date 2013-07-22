@@ -70,8 +70,8 @@ func compareParsedToFinalFeed(t *testing.T, data *ParsedFeedData, model *Feed, c
 	if !data.NextCheckTime.Equal(model.NextCheck) {
 		t.Errorf("Next time to check feed doesn't match %#v vs %#v!", data.NextCheckTime, model.NextCheck)
 	}
-	if !(strconv.FormatInt(data.NextCheckTime.Unix(), 10) == model.Indexes()[LastCheckIndexName]) {
-		t.Errorf("Next time(in 2i) to check feed doesn't match %v vs %v!", data.NextCheckTime.Unix(), model.Indexes()[LastCheckIndexName])
+	if !(strconv.FormatInt(data.NextCheckTime.Unix(), 10) == model.Indexes()[NextCheckIndexName]) {
+		t.Errorf("Next time(in 2i) to check feed doesn't match %v vs %v!", data.NextCheckTime.Unix(), model.Indexes()[NextCheckIndexName])
 	}
 	if !data.FetchedAt.Equal(model.LastCheck) {
 		t.Errorf("Fetch time from feed doesn't match %#v vs %#v!", data.NextCheckTime, model.NextCheck)

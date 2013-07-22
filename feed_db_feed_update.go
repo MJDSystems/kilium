@@ -113,7 +113,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	feed.NextCheck = feedData.NextCheckTime
 	feed.LastCheck = feedData.FetchedAt
 	// Also set 2i to appropriate values!
-	feed.Indexes()[LastCheckIndexName] = strconv.FormatInt(feed.NextCheck.Unix(), 10)
+	feed.Indexes()[NextCheckIndexName] = strconv.FormatInt(feed.NextCheck.Unix(), 10)
 
 	/* Next find all the feed items to insert/update.  If the item doesn't exist, create it's id and
 	 * mark for insert.  Otherwise mark it for an read/update/store pass.  Make sure to mark for
