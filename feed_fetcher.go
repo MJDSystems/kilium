@@ -49,6 +49,9 @@ func FeedFetcher(in <-chan url.URL, out chan<- RawFeed, errChan chan<- FeedError
 			if err != nil {
 				errChan <- FeedError{err, next}
 				continue
+			} else if resp.StatusCode != 200 {
+				errChan <- FeedError{fmt.Errorf("Failed to successfully retrieve item, error code %v", resp.StatusCode), next}
+				continue
 			}
 
 			content, err := ioutil.ReadAll(resp.Body)
