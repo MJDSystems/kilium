@@ -81,8 +81,8 @@ func (l ItemKey) Equal(r ItemKey) bool {
 func (l *ItemKey) UnmarshalJSON(input []byte) error {
 	input = input[1 : len(input)-1]
 
-	*l = make(ItemKey, base64.StdEncoding.DecodedLen(len(input)))
-	n, err := base64.StdEncoding.Decode(*l, input)
+	*l = make(ItemKey, base64.URLEncoding.DecodedLen(len(input)))
+	n, err := base64.URLEncoding.Decode(*l, input)
 
 	if err != nil {
 		return err
@@ -90,6 +90,17 @@ func (l *ItemKey) UnmarshalJSON(input []byte) error {
 		*l = (*l)[0:n]
 		return nil
 	}
+}
+
+func (l ItemKey) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString("\"")
+
+	dst := make([]byte, base64.StdEncoding.EncodedLen(len(l)))
+	base64.URLEncoding.Encode(dst, l)
+	buffer.Write(dst)
+
+	buffer.WriteByte('"')
+	return buffer.Bytes(), nil
 }
 
 func (key ItemKey) IsRawItemId(id []byte) bool {
