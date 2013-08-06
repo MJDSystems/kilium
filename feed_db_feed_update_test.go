@@ -155,7 +155,7 @@ func checkAllItemsDeleted(t *testing.T, itemKeyList ItemKeyList, con *riak.Clien
 	for _, itemKey := range itemKeyList {
 		go func(itemKey ItemKey, ch chan<- bool) {
 			modelItem := FeedItem{}
-			if err := con.LoadModel(itemKey.GetRiakKey(), &modelItem, riak.R1); err == riak.NotFound {
+			if err := con.LoadModel(itemKey.GetRiakKey(), &modelItem); err == riak.NotFound {
 				ch <- false
 			} else {
 				ch <- true
