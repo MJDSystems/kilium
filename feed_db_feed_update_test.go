@@ -167,7 +167,6 @@ func checkAllItemsDeleted(t *testing.T, itemKeyList ItemKeyList, con *riak.Clien
 	for _, _ = range itemKeyList {
 		found := <-ch
 		if found {
-			//t.Errorf("Found deleted item %s", itemKey.GetRiakKey())
 			problems++
 		}
 	}
