@@ -105,8 +105,8 @@ func NewRssMaster(con *riak.Client, idGenerator <-chan uint64) (master RssMaster
 	go func(con *riak.Client, InputCh chan<- url.URL, OutputCh <-chan FeedError) {
 		tick := time.Tick(5 * time.Minute)
 		for {
-			<-tick //Pause and wait for 5 minutes to pass.  This is just to batch requests when possible.
 			RssMasterPollFeeds(con, InputCh, OutputCh)
+			<-tick //Pause and wait for 5 minutes to pass.  This is just to batch requests when possible.
 		}
 	}(con, master.pipeline.InputCh, master.pipeline.OutputCh)
 
