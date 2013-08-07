@@ -18,7 +18,7 @@
  * modifications to remove app engine harness.
  */
 
-package main
+package kilium
 
 import (
 	"errors"

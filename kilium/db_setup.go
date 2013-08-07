@@ -14,13 +14,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package main
+package kilium
 
-import "fmt"
+import (
+	"github.com/tpjg/goriakpbc"
+)
 
-// For this to be a valid error, there must be one error in the slice.  Otherwise Error will panic!
-type MultiError []error
+func setupBucket(cli *riak.Client, bucketName string) error {
+	bucket, err := cli.NewBucket(bucketName)
+	if err != nil {
+		return err
+	}
+	err = bucket.SetAllowMult(true)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-func (m MultiError) Error() string {
-	return fmt.Sprintf("%v errors returned, first is %s", len(m), m[0])
+func GetDatabaseConnection(addr string) (*riak.Client, error) {
+	cli := riak.NewClientPool(addr, 100)
+	err := cli.Connect()
+	if err != nil {
+		return nil, err
+	}
+
+	//Setup the buckets here.  For now we have feeds and items.  Make the multi set, but leave N at 3.
+	err = setupBucket(cli, "feeds")
+	if err != nil {
+		return nil, err
+	}
+
+	err = setupBucket(cli, "items")
+	if err != nil {
+		return nil, err
+	}
+
+	return cli, nil
 }

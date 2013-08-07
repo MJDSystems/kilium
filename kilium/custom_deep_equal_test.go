@@ -7,7 +7,7 @@
 // Deep equality test via reflection
 // Modified to include a skip fields system for structs.
 
-package main
+package kilium
 
 import "reflect"
 
