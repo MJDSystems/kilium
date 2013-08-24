@@ -17,8 +17,6 @@
 package kilium
 
 import (
-	"bytes"
-
 	"errors"
 
 	"net/url"
@@ -127,6 +125,7 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 	}
 	NewItems := make([]ToProcess, 0)
 	UpdatedItems := make([]ToProcess, 0)
+	SeenNewItemKeys := make(map[string]bool)
 
 	for _, rawItem := range feedData.Items {
 		// Try to find the raw Item in the Item Keys list.
@@ -181,17 +180,11 @@ func updateFeed(con *riak.Client, feedUrl url.URL, feedData ParsedFeedData, ids 
 			if len(NewItems) < MaximumFeedItems {
 				// Also, make sure we aren't inserting the same item twice.  If it is duplicated, the
 				// second item is guaranteed to be later.  So just drop it.
-				found := false
-				for _, toProcess := range NewItems {
-					if bytes.Compare(toProcess.Data.GenericKey, rawItem.GenericKey) == 0 {
-						found = true
-						break
-					}
-				}
-				if found != true {
+				if keyString := string(rawItem.GenericKey); SeenNewItemKeys[keyString] == false {
 					NewItems = append(NewItems, ToProcess{
 						Data: rawItem,
 					})
+					SeenNewItemKeys[keyString] = true
 				}
 			}
 		}
