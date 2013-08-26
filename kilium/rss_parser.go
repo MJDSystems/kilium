@@ -19,6 +19,8 @@ package kilium
 import (
 	"crypto/sha512"
 
+	"errors"
+
 	"io"
 
 	"net/url"
@@ -96,6 +98,12 @@ func parseRssFeed(feedContents []byte, fetchedAt time.Time) (*ParsedFeedData, er
 	err := feed.FetchBytes("", feedContents, charset.NewReader)
 	if err != nil {
 		return nil, err
+	}
+	if len(feed.Channels) == 0 {
+		return nil, errors.New("No channel found inside the feed!")
+	}
+	if len(feed.Channels) > 1 {
+		return nil, errors.New("Too many channels found inside the feed!")
 	}
 
 	channel := feed.Channels[0]
