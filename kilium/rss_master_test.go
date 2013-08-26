@@ -98,7 +98,6 @@ func TestRssMasterPollSingleFeed(t *testing.T) {
 
 	// And try the fetch!
 	RssMasterPollFeeds(con, inputCh, outputCh)
-	t.Log(feedsParsed)
 	if feedsParsed != 1 {
 		t.Errorf("Failed to parse the expected number of feeds.  Wanted 1, got %v", feedsParsed)
 	}
