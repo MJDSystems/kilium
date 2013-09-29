@@ -56,6 +56,10 @@ func (list ItemKeyList) Get(index int) Comparable {
 	return list[index]
 }
 
+func (list *ItemKeyList) RemoveAt(index int) {
+	*list = append((*list)[:index], (*list)[index+1:]...)
+}
+
 func (list ItemKeyList) Len() int {
 	return len(list)
 }

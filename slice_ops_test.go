@@ -18,7 +18,6 @@ package main
 
 import (
 	"math/rand"
-
 	"reflect"
 
 	"sort"
@@ -27,7 +26,7 @@ import (
 	"testing/quick"
 )
 
-type testInt int
+type testInt int8
 
 func (l testInt) Less(r Comparable) bool {
 	return l < r.(testInt)
@@ -50,8 +49,26 @@ func (s *testIntSlice) Append(elm Comparable) {
 func (s testIntSlice) Get(index int) Comparable {
 	return s[index]
 }
+func (s *testIntSlice) RemoveAt(index int) {
+	*s = append((*s)[:index], (*s)[index+1:]...)
+}
 func (s testIntSlice) Len() int {
 	return len(s)
+}
+
+// Helper function from Hǎiliàng on golang-nuts to deal with duplicates.
+func (this *testIntSlice) RemoveDuplicates() {
+	length := len((*this)) - 1
+	for i := 0; i < length; i++ {
+		for j := i + 1; j <= length; j++ {
+			if (*this)[i] == (*this)[j] {
+				(*this)[j] = (*this)[length]
+				(*this) = (*this)[0:length]
+				length--
+				j--
+			}
+		}
+	}
 }
 
 func (s testIntSlice) Less(i, j int) bool {
@@ -94,5 +111,56 @@ func TestInsertSliceSortUsingRandomInt(t *testing.T) {
 func TestInsertSliceSortUsingSameLists(t *testing.T) {
 	if PreformTest(t, testIntSlice{4, 6}, testIntSlice{4, 6}) != true {
 		t.Error("Falied to properly merge slices with the same content!")
+	}
+}
+
+type RemoveSliceTestInput struct {
+	Input, ToRemove testIntSlice
+}
+
+func (RemoveSliceTestInput) Generate(rand *rand.Rand, size int) reflect.Value {
+	ret := RemoveSliceTestInput{}
+
+	// Keep searching for a non-zero length input.  Technically this could run forever, but
+	// realistically it won't.  Thus I don't care too much.
+	for len(ret.Input) == 0 {
+		val, ok := quick.Value(reflect.TypeOf(testIntSlice{}), rand)
+		if ok != true {
+			panic("Failed to generate input slice elements!!!!!")
+		}
+		ret.Input = val.Interface().(testIntSlice)
+	}
+
+	removeElementSize := rand.Intn(len(ret.Input))
+	ret.ToRemove = make(testIntSlice, removeElementSize)
+
+	for index := range ret.ToRemove {
+		ret.ToRemove[index] = ret.Input[rand.Intn(len(ret.Input))]
+	}
+
+	// Random numbers may generate dups.  Just remove them brute force style.
+	ret.Input.RemoveDuplicates()
+	ret.ToRemove.RemoveDuplicates()
+	sort.Sort(ret.Input)
+	sort.Sort(ret.ToRemove)
+
+	return reflect.ValueOf(ret)
+}
+
+func TestRemoveSliceElements(t *testing.T) {
+	f := func(r RemoveSliceTestInput) bool {
+		RemoveSliceElements(&r.Input, &r.ToRemove)
+		for inI, in := range r.Input {
+			for remI, removed := range r.ToRemove {
+				if in == removed {
+					t.Logf("Found duplicate at %v, %v, value %v", inI, remI, in)
+					return false
+				}
+			}
+		}
+		return true
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
 	}
 }

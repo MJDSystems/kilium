@@ -24,6 +24,7 @@ type ComparableArray interface {
 	Make() ComparableArray
 	Append(Comparable)
 	Get(index int) Comparable
+	RemoveAt(index int)
 	Len() int
 }
 
@@ -58,4 +59,20 @@ func InsertSliceSort(x, y ComparableArray) ComparableArray {
 	}
 
 	return ret
+}
+
+func RemoveSliceElements(elem, toRemove ComparableArray) {
+	for eI, rI := 0, 0; eI < elem.Len() && rI < toRemove.Len(); {
+		nextE := elem.Get(eI)
+		nextR := toRemove.Get(rI)
+		if nextR.Less(nextE) {
+			eI++ //This element is not the one.  Next!
+		} else if nextE.Less(nextR) {
+			rI++ //This is not in the list.  Next!
+		} else {
+			//Dup!
+			elem.RemoveAt(eI)
+			rI++
+		}
+	}
 }
