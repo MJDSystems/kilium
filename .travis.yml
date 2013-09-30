@@ -1,0 +1,20 @@
+language: go
+go:
+- 1.1
+- tip
+matrix:
+  allow_failures:
+  - go: tip
+env:
+  global:
+  - secure: kiYdwEZyxmi9nJSUu98gO7QbdtX2SmQLi0MoayiNfdD4RS6AqE6u3Rz0kZRicRtIOoJHfWDSz/9Gza+mj+y807XJzM0M1r6LaIuX/jTHLIdLopG2DgnGDjR2OOGb+VmCTAMgSHAkQSlydGtReF3F5KCZWKfNT86wXwwpA7Iefvo=
+services:
+- riak
+install:
+- cd $TRAVIS_BUILD_DIR
+- go get -d -v ./...
+- go get -v github.com/gorilla/feeds
+- go test -i ./...
+- go get github.com/axw/gocov/gocov
+- go get github.com/mattn/goveralls
+script: ./.travis.sh
